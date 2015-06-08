@@ -45,7 +45,8 @@ MAVLINK_SRCS=$(MAVLINK)/communication.c \
 	$(MAVLINK)/mission.c \
 	$(MAVLINK)/parameter.c \
 	$(MAVLINK)/command_parser.c \
-	$(MAVLINK)/global.c
+	$(MAVLINK)/global.c \
+	$(MAVLINK)/checksum.c
 
 CMSIS_SRCS= \
 	$(CMSIS)/FastMathFunctions/arm_cos_f32.c \
