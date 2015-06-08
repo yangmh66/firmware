@@ -7,6 +7,7 @@
 #include "AT24C04C.h"
 #include "global.h"
 #include "attitude_stabilizer.h"
+#include "checksum.h"
 
 #define QUADCOPTER 0
 
@@ -297,6 +298,7 @@ int save_global_data_into_eeprom(int index)
 	uint8_t *buffer;
 	uint16_t eeprom_address;
 	uint8_t data_len;
+	uint8_t checksum;
 
 	switch(global_mav_data_list[index].type) {
 	    case UINT8:
@@ -333,17 +335,22 @@ int save_global_data_into_eeprom(int index)
 		//Get the eeprom address
 		eeprom_address = global_mav_data_list[index].eeprom_address;
 
+		//Generate checksum data
+		checksum = checksum_generate(buffer, data_len);
+
 		/* Write the data into the eeprom */
 		eeprom.write(buffer, eeprom_address, data_len); //Payload, n byte
-		eeprom.write('\0', eeprom_address + data_len + 1, 1); //Checksum, 1 byte
+		eeprom.write(&checksum, eeprom_address + data_len + 1, 1); //Checksum, 1 byte
 
 		/* Verify the data */
 		Data data_eeprom;
 		uint8_t buffer_verify[5]; //Hard code, the max size of the multiple data type
+		uint8_t checksum_verify;
 		bool data_is_correct;
 
-		eeprom.read(buffer_verify, eeprom_address, data_len);
+		eeprom.read(buffer_verify, eeprom_address, data_len + 1); //Plus 1 for checksum
 		memcpy(&data_eeprom, buffer_verify, data_len);
+		memcpy(&checksum_verify, buffer_verify + data_len + 1, 1);
 
 		//TODO: The code is too long, improve this!
 		switch(global_mav_data_list[index].type) {
@@ -376,6 +383,8 @@ int save_global_data_into_eeprom(int index)
 				data_is_correct = true;
 			break;
 		}
+
+		if(checksum_verify != checksum) data_is_correct = false;
 
 		if(data_is_correct == false) {
 			printf("EEPROM Data Check is failed!"); //TODO:Data is not correct, handle this situation!
