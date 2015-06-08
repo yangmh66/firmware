@@ -340,7 +340,7 @@ int save_global_data_into_eeprom(int index)
 
 		/* Write the data into the eeprom */
 		eeprom.write(buffer, eeprom_address, data_len); //Payload, n byte
-		eeprom.write(&checksum, eeprom_address + data_len + 1, 1); //Checksum, 1 byte
+		eeprom.write(&checksum, eeprom_address + data_len, 1); //Checksum, 1 byte
 
 		/* Verify the data */
 		Data data_eeprom;
@@ -350,7 +350,7 @@ int save_global_data_into_eeprom(int index)
 
 		eeprom.read(buffer_verify, eeprom_address, data_len + 1); //Plus 1 for checksum
 		memcpy(&data_eeprom, buffer_verify, data_len);
-		memcpy(&checksum_verify, buffer_verify + data_len + 1, 1);
+		memcpy(&checksum_verify, buffer_verify + data_len, 1);
 
 		//TODO: The code is too long, improve this!
 		switch(global_mav_data_list[index].type) {
@@ -386,9 +386,8 @@ int save_global_data_into_eeprom(int index)
 
 		if(checksum_verify != checksum) data_is_correct = false;
 
-		if(data_is_correct == false) {
-			printf("EEPROM Data Check is failed!"); //TODO:Data is not correct, handle this situation!
-		}
+		if(data_is_correct == false)
+			printf("EEPROM payload check is failed!\n"); //TODO:Data is not correct, handle this situation!
 
 		/* Set up the first byte of eeprom (data = global data count) */
 		if(eeprom_is_written == false) {
@@ -458,12 +457,12 @@ void load_global_data_from_eeprom(void)
 				/* Read the data from the eeprom */
 				eeprom.read(eeprom_data, eeprom_address, type_size + 1);
 				memcpy(&data, eeprom_data, type_size);
-				memcpy(&checksum, eeprom_data + type_size + 1, 1);
+				memcpy(&checksum, eeprom_data + type_size, 1);
 	
 				if(checksum_test(eeprom_data, type_size, checksum) == 0) {
 					set_global_data_value(i, type, DATA_CAST(data));
 				} else {
-					printf("Checksum test is failed!"); //TODO:Data is not correct, handle this situation!
+					printf("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
 				}
 			}
 
