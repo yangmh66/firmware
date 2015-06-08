@@ -414,6 +414,7 @@ void load_global_data_from_eeprom(void)
 	/* Start from second byte, 
 	 * First byte: check the eeprom has been use or not */
 	uint16_t eeprom_address = 1;
+	uint8_t checksum;
 	Type type;
 	uint8_t type_size;
 	Data data;
@@ -457,9 +458,13 @@ void load_global_data_from_eeprom(void)
 				/* Read the data from the eeprom */
 				eeprom.read(eeprom_data, eeprom_address, type_size + 1);
 				memcpy(&data, eeprom_data, type_size);
+				memcpy(&checksum, eeprom_data + type_size + 1, 1);
 	
-				//TODO: Checksum Test to test the eeprom data
-				set_global_data_value(i, type, DATA_CAST(data));
+				if(checksum_test(eeprom_data, type_size, checksum) == 0) {
+					set_global_data_value(i, type, DATA_CAST(data));
+				} else {
+					printf("Checksum test is failed!"); //TODO:Data is not correct, handle this situation!
+				}
 			}
 
 			//One more byte for checksum
