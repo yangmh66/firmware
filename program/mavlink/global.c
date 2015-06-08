@@ -11,7 +11,7 @@
 
 #define QUADCOPTER 0
 
-bool eeprom_is_wrote;
+bool eeprom_is_written;
 
 int modifiable_data_cnt = 0;
 global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
@@ -93,7 +93,7 @@ void init_global_data(void)
 			modifiable_data_cnt++;
 	}
 	
-	if(eeprom_is_wrote == true) {
+	if(eeprom_is_written == true) {
 		/* Clear the EEPROM */
 		uint8_t buffer[1024] = {'\0'};
 		eeprom.write(buffer, 0, 1024);
@@ -391,8 +391,8 @@ int save_global_data_into_eeprom(int index)
 		}
 
 		/* Set up the first byte of eeprom (data = global data count) */
-		if(eeprom_is_wrote == false) {
-			eeprom_is_wrote = true;
+		if(eeprom_is_written == false) {
+			eeprom_is_written = true;
 		}
 	}
 
@@ -408,7 +408,7 @@ void load_global_data_from_eeprom(void)
 
 	/* If first byte's value of EEPROM is equal to the global data count, it means 
 	   the EEPROM has been written */	
-	eeprom_is_wrote = (eeprom_data[0] == get_global_data_count() ? true : false);
+	eeprom_is_written = (eeprom_data[0] == get_global_data_count() ? true : false);
 
 	bool parameter_config;
 	/* Start from second byte, 
@@ -453,7 +453,7 @@ void load_global_data_from_eeprom(void)
 				break;
 			}
 
-			if(eeprom_is_wrote == true) {
+			if(eeprom_is_written == true) {
 				/* Read the data from the eeprom */
 				eeprom.read(eeprom_data, eeprom_address, type_size + 1);
 				memcpy(&data, eeprom_data, type_size);
