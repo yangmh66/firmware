@@ -66,18 +66,30 @@ global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
 	[NAV_KD] = {.name = "navigation.kd", .type = FLOAT, .parameter_config = true},
 
 	/* Sensor calibration */
-	[ACCEL_X_MAX] = {.name = "accel.max-x", .type = FLOAT, .parameter_config = true},
-	[ACCEL_X_MIN] = {.name = "accel.min-x", .type = FLOAT, .parameter_config = true},
-	[ACCEL_Y_MAX] = {.name = "accel.max-y", .type = FLOAT, .parameter_config = true},
-	[ACCEL_Y_MIN] = {.name = "accel.min-y", .type = FLOAT, .parameter_config = true},
-	[ACCEL_Z_MAX] = {.name = "accel.max-z", .type = FLOAT, .parameter_config = true},
-	[ACCEL_Z_MIN] = {.name = "accel.min-z", .type = FLOAT, .parameter_config = true},
-	[MAG_X_MAX] = {.name = "mag.max-x", .type = FLOAT, .parameter_config = true},
-	[MAG_X_MIN] = {.name = "mag.min-x", .type = FLOAT, .parameter_config = true},
-	[MAG_Y_MAX] = {.name = "mag.max-y", .type = FLOAT, .parameter_config = true},
-	[MAG_Y_MIN] = {.name = "mag.min-y", .type = FLOAT, .parameter_config = true},
-	[MAG_Z_MAX] = {.name = "mag.max-z", .type = FLOAT, .parameter_config = true},
-	[MAG_Z_MIN] = {.name = "mag.min-z", .type = FLOAT, .parameter_config = true}
+	[ACCEL_X_MAX] = {.name = "accel.max-x", .type = FLOAT, .parameter_config = true,
+		.data.float_value = 4096},
+	[ACCEL_X_MIN] = {.name = "accel.min-x", .type = FLOAT, .parameter_config = true,
+		.data.float_value = -4096},
+	[ACCEL_Y_MAX] = {.name = "accel.max-y", .type = FLOAT, .parameter_config = true,
+		.data.float_value = 4096},
+	[ACCEL_Y_MIN] = {.name = "accel.min-y", .type = FLOAT, .parameter_config = true,
+		.data.float_value = -4096},
+	[ACCEL_Z_MAX] = {.name = "accel.max-z", .type = FLOAT, .parameter_config = true,
+		.data.float_value = 4096},
+	[ACCEL_Z_MIN] = {.name = "accel.min-z", .type = FLOAT, .parameter_config = true,
+		.data.float_value = -4096},
+	[MAG_X_MAX] = {.name = "mag.max-x", .type = FLOAT, .parameter_config = true,
+		.data.float_value = 4096},
+	[MAG_X_MIN] = {.name = "mag.min-x", .type = FLOAT, .parameter_config = true,
+		.data.float_value = -4096},
+	[MAG_Y_MAX] = {.name = "mag.max-y", .type = FLOAT, .parameter_config = true,
+		.data.float_value = 4096},
+	[MAG_Y_MIN] = {.name = "mag.min-y", .type = FLOAT, .parameter_config = true,
+		.data.float_value = -4096},
+	[MAG_Z_MAX] = {.name = "mag.max-z", .type = FLOAT, .parameter_config = true,
+		.data.float_value = 4096},
+	[MAG_Z_MIN] = {.name = "mag.min-z", .type = FLOAT, .parameter_config = true,
+		.data.float_value = -4096}
 };
 
 void init_global_data(void)
