@@ -48,4 +48,3 @@ void commandExec(char *cmd_str, command_data *cd, command_list *list, int list_c
 
 	list[0].func(cd->par, cd->par_cnt); //Unknown command's function
 }
-
