@@ -47,6 +47,7 @@ CFLAGS_INCLUDE=-I$(WORKSPACE_DIR)/ \
 	-I$(CMSIS) \
 	-I$(ST)/inc \
 	-I$(MAVLINK) \
+	-I$(_SHELL) \
 	-I$(MAVLINK_LIB) \
 	-I$(MAVLINK_LIB)/common
 
