@@ -6,7 +6,7 @@
 #include "std.h"
 #include "usart.h"
 #include "io.h"
-int printf_base(const char *format, ...)
+int printf_base(void (*puts)(uint8_t *str), const char *format, ...)
 {
 	char str[128];
 	va_list para;
@@ -54,6 +54,8 @@ int printf_base(const char *format, ...)
 	}
 
 	va_end(para);
-	uart8_puts((uint8_t *)str);
+
+	(*puts)((uint8_t *)str);
+
 	return 1;
 }

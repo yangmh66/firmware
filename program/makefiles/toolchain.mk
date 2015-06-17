@@ -57,7 +57,7 @@ CFLAGS_DEFINE= \
         -D __FPU_USED=1 \
         -include $(BOARD_CONFIG) \
         -include $(DEBUG_CONFIG) \
-	-U printf -D printf=printf_base
+	-U printf
 
 CFLAGS=-g $(ARCH_FLAGS)\
 	${CFLAGS_INCLUDE} ${CFLAGS_DEFINE} \
