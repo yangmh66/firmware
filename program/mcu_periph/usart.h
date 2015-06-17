@@ -5,6 +5,13 @@ typedef struct {
         char ch;
 } serial_msg;
 
+typedef struct {
+	int (*printf)(const char *format, ...);
+} serial_t;
+
+extern serial_t serial1;
+extern serial_t serial2;
+
 void usart_init(void);
 void retarget_init(void);
 int _write(int fd, char *ptr, int len);
@@ -16,5 +23,4 @@ void usart2_dma_init(void);
 char usart3_read(void);
 void usart3_send(char str);
 void USART3_IRQHandler(void);
-void uart8_puts(uint8_t *ptr);
 #endif

@@ -8,10 +8,15 @@
 #include "queue.h"
 #include "semphr.h"
 
-#define PRINTF_USART UART8
-/* Serial Initializaton ------------------------------------------------------*/
+#include "io.h"
 
-/* USART Initializaton ------------------------------------------------------*/
+static void usart1_puts(uint8_t *ptr);
+static void uart8_puts(uint8_t *ptr);
+static int usart1_printf(const char *format, ...);
+static int usart8_printf(const char *format, ...);
+
+serial_t serial1 = {.printf = usart1_printf};
+serial_t serial2 = {.printf = usart8_printf};
 
 static void enable_usart1(void)
 {
@@ -244,6 +249,24 @@ void usart_init()
 	enable_usart8();
 }
 
+static void usart1_puts(uint8_t *ptr)
+{
+	while(*ptr!='\0'){
+
+		USART_SendData(USART1, (uint8_t)*ptr);
+
+		/* Loop until USART1 DR register is empty */
+		while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
+		ptr++;
+	}
+
+}
+
+static int usart1_printf(const char *format, ...)
+{
+	return printf_base(usart1_puts, format);
+}
+
 void usart2_dma_init()
 {
 
@@ -316,10 +339,10 @@ int _write(int fd, char *ptr, int len)
 	int i = 0;
 	fd=fd;
 	for (i = 0; i < len ; i++) {
-		USART_SendData(PRINTF_USART, (uint8_t) *ptr);
+		USART_SendData(UART8, (uint8_t)*ptr);
 
 		/* Loop until USART2 DR register is empty */
-		while (USART_GetFlagStatus(PRINTF_USART, USART_FLAG_TXE) == RESET);
+		while (USART_GetFlagStatus(UART8, USART_FLAG_TXE) == RESET);
 
 		ptr++;
 	}
@@ -331,6 +354,7 @@ int _write(int fd, char *ptr, int len)
 xSemaphoreHandle serial_tx_wait_sem = NULL;
 xQueueHandle serial_rx_queue = NULL;
 xQueueHandle gps_serial_queue = NULL;
+
 void USART3_IRQHandler(void)
 {
 	long lHigherPriorityTaskWoken = pdFALSE;
@@ -372,15 +396,20 @@ void usart3_send(char str)
 	USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
 }
 
-void uart8_puts(uint8_t *ptr)
+static void uart8_puts(uint8_t *ptr)
 {
 	while(*ptr!='\0'){
 
-		USART_SendData(PRINTF_USART, (uint8_t) *ptr);
+		USART_SendData(UART8, (uint8_t)*ptr);
 
 		/* Loop until USART8 DR register is empty */
-		while (USART_GetFlagStatus(PRINTF_USART, USART_FLAG_TXE) == RESET);
+		while (USART_GetFlagStatus(UART8, USART_FLAG_TXE) == RESET);
 		ptr++;
 	}
 
+}
+
+static int usart8_printf(const char *format, ...)
+{
+	return printf_base(uart8_puts, format);
 }
