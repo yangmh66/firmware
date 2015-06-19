@@ -11,11 +11,11 @@
 #include "io.h"
 
 static void usart1_putc(uint8_t buf);
-static void usart8_putc(uint8_t buf);
+static void uart8_putc(uint8_t buf);
 static void usart1_puts(uint8_t *ptr);
 static void uart8_puts(uint8_t *ptr);
 static int usart1_printf(const char *format, ...);
-static int usart8_printf(const char *format, ...);
+static int uart8_printf(const char *format, ...);
 
 serial_t serial1 = {
 	.putc = usart1_putc,
@@ -24,9 +24,9 @@ serial_t serial1 = {
 };
 
 serial_t serial2 = {
-	.putc = usart8_putc,
+	.putc = uart8_putc,
 	.puts = uart8_puts,
-	.printf = usart8_printf
+	.printf = uart8_printf
 };
 
 static void enable_usart1(void)
@@ -213,7 +213,7 @@ static void enable_usart5(void)
 	USART_Cmd(UART5, ENABLE);
 }
 
-static void enable_usart8(void)
+static void enable_uart8(void)
 {
 	/* RCC Initialization */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART8, ENABLE);
@@ -257,7 +257,7 @@ void usart_init()
 	enable_usart3();
 	enable_usart4();
 	enable_usart5();
-	enable_usart8();
+	enable_uart8();
 }
 
 static void usart1_putc(uint8_t buf)
@@ -413,7 +413,7 @@ void usart3_send(char str)
 	USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
 }
 
-static void usart8_putc(uint8_t buf)
+static void uart8_putc(uint8_t buf)
 {
 	USART_SendData(UART8, buf);
 	while(USART_GetFlagStatus(UART8, USART_FLAG_TXE) == RESET);
@@ -432,7 +432,7 @@ static void uart8_puts(uint8_t *ptr)
 
 }
 
-static int usart8_printf(const char *format, ...)
+static int uart8_printf(const char *format, ...)
 {
 	return printf_base(uart8_puts, format);
 }
