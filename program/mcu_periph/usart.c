@@ -25,7 +25,7 @@ serial_t serial1 = {
 
 serial_t serial2 = {
 	.putc = usart8_putc,
-	.puts = usart1_puts,
+	.puts = uart8_puts,
 	.printf = usart8_printf
 };
 
