@@ -8,7 +8,7 @@ typedef struct {
 typedef struct {
 	char(*getc)(void);
 	void (*putc)(char str);
-	int (*puts)(const char *str);
+	void (*puts)(uint8_t *str);
 	int (*gets)(void);
 	int (*printf)(const char *format, ...);
 } serial_t;

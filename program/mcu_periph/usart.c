@@ -15,8 +15,15 @@ static void uart8_puts(uint8_t *ptr);
 static int usart1_printf(const char *format, ...);
 static int usart8_printf(const char *format, ...);
 
-serial_t serial1 = {.printf = usart1_printf};
-serial_t serial2 = {.printf = usart8_printf};
+serial_t serial1 = {
+	.puts = usart1_puts,
+	.printf = usart1_printf
+};
+
+serial_t serial2 = {
+	.puts = usart1_puts,
+	.printf = usart8_printf
+};
 
 static void enable_usart1(void)
 {
