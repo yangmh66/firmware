@@ -6,7 +6,7 @@ typedef struct {
 } serial_msg;
 
 typedef struct {
-	char(*getc)(void);
+	uint8_t (*getc)(void);
 	void (*putc)(uint8_t buf);
 	void (*puts)(uint8_t *str);
 	int (*printf)(const char *format, ...);
