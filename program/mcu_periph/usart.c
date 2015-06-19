@@ -10,17 +10,21 @@
 
 #include "io.h"
 
+static void usart1_putc(uint8_t buf);
+static void usart8_putc(uint8_t buf);
 static void usart1_puts(uint8_t *ptr);
 static void uart8_puts(uint8_t *ptr);
 static int usart1_printf(const char *format, ...);
 static int usart8_printf(const char *format, ...);
 
 serial_t serial1 = {
+	.putc = usart1_putc,
 	.puts = usart1_puts,
 	.printf = usart1_printf
 };
 
 serial_t serial2 = {
+	.putc = usart8_putc,
 	.puts = usart1_puts,
 	.printf = usart8_printf
 };
@@ -256,6 +260,12 @@ void usart_init()
 	enable_usart8();
 }
 
+static void usart1_putc(uint8_t buf)
+{
+	USART_SendData(USART1, buf);
+	while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
+}
+
 static void usart1_puts(uint8_t *ptr)
 {
 	while(*ptr!='\0'){
@@ -401,6 +411,12 @@ void usart3_send(char str)
 
 	USART_SendData(USART3, (uint16_t)str);
 	USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
+}
+
+static void usart8_putc(uint8_t buf)
+{
+	USART_SendData(UART8, buf);
+	while(USART_GetFlagStatus(UART8, USART_FLAG_TXE) == RESET);
 }
 
 static void uart8_puts(uint8_t *ptr)
