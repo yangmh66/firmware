@@ -10,26 +10,26 @@
 
 #include "io.h"
 
-static uint8_t usart1_getc(void);
-static uint8_t uart8_getc(void);
-static void usart1_putc(uint8_t buf);
-static void uart8_putc(uint8_t buf);
-static void usart1_puts(uint8_t *ptr);
-static void uart8_puts(uint8_t *ptr);
+static uint8_t usart1_getch(void);
+static uint8_t uart8_getch(void);
+static void usart1_putch(uint8_t buf);
+static void uart8_putch(uint8_t buf);
+static void usart1_putstr(uint8_t *ptr);
+static void uart8_putstr(uint8_t *ptr);
 static int usart1_printf(const char *format, ...);
 static int uart8_printf(const char *format, ...);
 
 serial_t serial1 = {
-	.getc = usart1_getc,
-	.putc = usart1_putc,
-	.puts = usart1_puts,
+	.getch = usart1_getch,
+	.putch = usart1_putch,
+	.putstr = usart1_putstr,
 	.printf = usart1_printf
 };
 
 serial_t serial2 = {
-	.getc = uart8_getc,
-	.putc = uart8_putc,
-	.puts = uart8_puts,
+	.getch = uart8_getch,
+	.putch = uart8_putch,
+	.putstr = uart8_putstr,
 	.printf = uart8_printf
 };
 
@@ -264,20 +264,20 @@ void usart_init()
 	enable_uart8();
 }
 
-static uint8_t usart1_getc(void)
+static uint8_t usart1_getch(void)
 {
 	while(USART_GetITStatus(USART1, USART_IT_RXNE) == RESET);
 
 	return USART_ReceiveData(USART1);
 }
 
-static void usart1_putc(uint8_t buf)
+static void usart1_putch(uint8_t buf)
 {
 	USART_SendData(USART1, buf);
 	while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
 }
 
-static void usart1_puts(uint8_t *ptr)
+static void usart1_putstr(uint8_t *ptr)
 {
 	while(*ptr!='\0'){
 
@@ -292,7 +292,7 @@ static void usart1_puts(uint8_t *ptr)
 
 static int usart1_printf(const char *format, ...)
 {
-	return printf_base(usart1_puts, format);
+	return printf_base(usart1_putstr, format);
 }
 
 void usart2_dma_init()
@@ -422,20 +422,20 @@ void usart3_send(char str)
 	USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
 }
 
-static uint8_t uart8_getc(void)
+static uint8_t uart8_getch(void)
 {
 	while(USART_GetITStatus(UART8, USART_IT_RXNE) == RESET);
 
 	return USART_ReceiveData(UART8);
 }
 
-static void uart8_putc(uint8_t buf)
+static void uart8_putch(uint8_t buf)
 {
 	USART_SendData(UART8, buf);
 	while(USART_GetFlagStatus(UART8, USART_FLAG_TXE) == RESET);
 }
 
-static void uart8_puts(uint8_t *ptr)
+static void uart8_putstr(uint8_t *ptr)
 {
 	while(*ptr!='\0'){
 
@@ -449,5 +449,5 @@ static void uart8_puts(uint8_t *ptr)
 
 static int uart8_printf(const char *format, ...)
 {
-	return printf_base(uart8_puts, format);
+	return printf_base(uart8_putstr, format);
 }
