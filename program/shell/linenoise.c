@@ -178,7 +178,7 @@ static void refreshLine(struct linenoiseState *l)
 	}
 }
 
-void linenoiseEditInsert(struct linenoiseState *l, int c)
+static void linenoiseEditInsert(struct linenoiseState *l, int c)
 {
 	if (l->len < l->buflen) {
 		if (l->len == l->pos) {
@@ -207,7 +207,7 @@ void linenoiseEditInsert(struct linenoiseState *l, int c)
 	}
 }
 
-void linenoiseEditMoveLeft(struct linenoiseState *l)
+static void linenoiseEditMoveLeft(struct linenoiseState *l)
 {
 	if (l->pos > 0) {
 		l->pos--;
@@ -215,7 +215,7 @@ void linenoiseEditMoveLeft(struct linenoiseState *l)
 	}
 }
 
-void linenoiseEditMoveRight(struct linenoiseState *l)
+static void linenoiseEditMoveRight(struct linenoiseState *l)
 {
 	if (l->pos != l->len) {
 		l->pos++;
@@ -225,7 +225,7 @@ void linenoiseEditMoveRight(struct linenoiseState *l)
 
 #define LINENOISE_HISTORY_NEXT 0
 #define LINENOISE_HISTORY_PREV 1
-void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
+static void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
 {
 	if (history_len > 1) {
 		/* Update the current history entry before to
@@ -251,7 +251,7 @@ void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
 	}
 }
 
-void linenoiseEditDelete(struct linenoiseState *l)
+static void linenoiseEditDelete(struct linenoiseState *l)
 {
 	if (l->len > 0 && l->pos < l->len) {
 		memmove(l->buf + l->pos, l->buf + l->pos + 1, l->len - l->pos - 1);
@@ -261,7 +261,7 @@ void linenoiseEditDelete(struct linenoiseState *l)
 	}
 }
 
-void linenoiseEditBackspace(struct linenoiseState *l)
+static void linenoiseEditBackspace(struct linenoiseState *l)
 {
 	if (l->pos > 0 && l->len > 0) {
 		memmove(l->buf + l->pos - 1, l->buf + l->pos, l->len - l->pos);
@@ -272,7 +272,7 @@ void linenoiseEditBackspace(struct linenoiseState *l)
 	}
 }
 
-void linenoiseEditDeletePrevWord(struct linenoiseState *l)
+static void linenoiseEditDeletePrevWord(struct linenoiseState *l)
 {
 	size_t old_pos = l->pos;
 	size_t diff;
