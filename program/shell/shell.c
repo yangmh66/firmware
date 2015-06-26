@@ -66,24 +66,32 @@ void shell_task(void)
 	}
 }
 /**** Customize command function ******************************************************/
-void shell_unknown_cmd(char parameter[][MAX_CMD_LEN], int par_cnt)
+void shell_unknown_cmd(
+	__attribute__((__unused__))char parameter[][MAX_CMD_LEN], 
+	__attribute__((__unused__))int par_cnt)
 {
 	serial1.printf("Command not found\n\r");
 }
 
-void shell_clear(char parameter[][MAX_CMD_LEN], int par_cnt)
+void shell_clear(
+	__attribute__((__unused__))char parameter[][MAX_CMD_LEN],
+	__attribute__((__unused__))int par_cnt)
 {
 	linenoiseClearScreen();
 }
 
-void shell_help(char parameter[][MAX_CMD_LEN], int par_cnt)
+void shell_help(
+	__attribute__((__unused__))char parameter[][MAX_CMD_LEN],
+	__attribute__((__unused__))int par_cnt)
 {
 	serial1.printf("\n\rSupport commands:\n\r");
 	serial1.printf("clear  \tClear the screen\n\r");
 	serial1.printf("help \tShow the list of all commands\n\r");
 }
 
-void shell_license(char parameter[][MAX_CMD_LEN], int par_cnt)
+void shell_license(
+	__attribute__((__unused__))char parameter[][MAX_CMD_LEN],
+	__attribute__((__unused__))int par_cnt)
 {
 	serial1.printf("Project UrsusPilot\n\r");
 
