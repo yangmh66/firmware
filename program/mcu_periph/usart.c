@@ -269,20 +269,20 @@ void usart_init()
 	enable_uart8();
 }
 
-static uint8_t usart1_getch(void)
+static char usart1_getch(void)
 {
 	while(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
 
 	return USART_ReceiveData(USART1);
 }
 
-static void usart1_putch(uint8_t buf)
+static void usart1_putch(char buf)
 {
 	USART_SendData(USART1, buf);
 	while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
 }
 
-static void usart1_putstr(uint8_t *ptr)
+static void usart1_putstr(const char *ptr)
 {
 	while(*ptr!='\0'){
 
@@ -476,20 +476,20 @@ void usart3_send(char str)
 	USART_ITConfig(USART3, USART_IT_TXE, ENABLE);
 }
 
-static uint8_t uart8_getch(void)
+static char uart8_getch(void)
 {
 	while(USART_GetFlagStatus(UART8, USART_FLAG_RXNE) == RESET);
 
 	return USART_ReceiveData(UART8);
 }
 
-static void uart8_putch(uint8_t buf)
+static void uart8_putch(char buf)
 {
 	USART_SendData(UART8, buf);
 	while(USART_GetFlagStatus(UART8, USART_FLAG_TXE) == RESET);
 }
 
-static void uart8_putstr(uint8_t *ptr)
+static void uart8_putstr(const char *ptr)
 {
 	while(*ptr!='\0'){
 
