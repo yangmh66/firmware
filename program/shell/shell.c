@@ -32,7 +32,7 @@ command_list shellCmd_list[SHELL_CMD_CNT] = {
 };
 
 /**** Shell task **********************************************************************/
-void shell_linenoise_completion(const char *buf, linenoiseCompletions *lc)
+static void shell_linenoise_completion(const char *buf, linenoiseCompletions *lc)
 {
 	int i; //i = 1 to ignore the "UNKNOWN_COMMAND" string
 
