@@ -103,7 +103,7 @@ static int completeLine(struct linenoiseState *ls)
 
 				/* Update buffer and return */
 				if (i < lc.len) {
-					for (nwritten = 0; nwritten < ls->buflen; nwritten++) {
+					for (nwritten = 0; (size_t)nwritten < ls->buflen; nwritten++) {
 						ls->buf[nwritten] = lc.cvec[i][nwritten];
 
 						if (lc.cvec[i][nwritten] == '\0')
