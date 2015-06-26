@@ -456,16 +456,11 @@ static int linenoiseRaw(char *buf, size_t buflen, const char *prompt)
 	return count;
 }
 
-char *linenoise(const char *prompt)
+void linenoise(const char *prompt, char *result_str)
 {
-	char buf[LINENOISE_MAX_LINE];
-	int count;
+	int count = linenoiseRaw(result_str, LINENOISE_MAX_LINE, prompt);
 
-	count = linenoiseRaw(buf, LINENOISE_MAX_LINE, prompt);
-
-	if (count == -1) return NULL;
-
-	return strdup(buf);
+	if (count == -1) result_str[0] = '\0';
 }
 
 int linenoiseHistoryAdd(const char *line)

@@ -44,6 +44,8 @@ static void shell_linenoise_completion(const char *buf, linenoiseCompletions *lc
 
 void shell_task(void)
 {
+	char shell_text[256] = {'\0'};
+
 	/* Clear the screen */
 	serial1.printf("\x1b[H\x1b[2J");
 	/* Show the prompt messages */
@@ -55,14 +57,14 @@ void shell_task(void)
 
 		command_data shell_cd = {.par_cnt = 0};
 
-		char *shell_str = linenoise("shell > ");
+		linenoise("shell > ", shell_text);
 
-		if (shell_str == NULL)
+		if (shell_text[0] == '\0')
 			continue;
 
-		commandExec(shell_str, &shell_cd, shellCmd_list, SHELL_CMD_CNT);
+		commandExec(shell_text, &shell_cd, shellCmd_list, SHELL_CMD_CNT);
 
-		linenoiseHistoryAdd(shell_str);
+		linenoiseHistoryAdd(shell_text);
 	}
 }
 /**** Customize command function ******************************************************/
