@@ -19,6 +19,8 @@
 #include "communication.h"
 #include "system_time.h"
 #include "lea6h_ubx.h"
+#include "shell.h"
+
 extern uint8_t estimator_trigger_flag;
 
 /* FreeRTOS */
@@ -109,6 +111,15 @@ int main(void)
 		4096,
 		NULL,
 		tskIDLE_PRIORITY + 7, NULL
+	);
+
+	xTaskCreate(
+		(pdTASK_CODE)shell_task,
+		(signed portCHAR *)"shell task",
+		2048,
+		NULL,
+		tskIDLE_PRIORITY + 4,
+		NULL
 	);
 
 	xTaskCreate(

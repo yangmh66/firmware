@@ -1,6 +1,10 @@
 #include "string.h"
 #include "stdlib.h"
 
+#include "usart.h"
+
+#include "linenoise.h"
+
 #define LINENOISE_DEFAULT_HISTORY_MAX_LEN 100
 #define LINENOISE_MAX_LINE 256 //4096 is too much to this environment, it will crash!
 
@@ -28,7 +32,7 @@ char **history = NULL;
 
 void linenoiseClearScreen(void)
 {
-	serial.puts("\x1b[H\x1b[2J");
+	serial1.putstr("\x1b[H\x1b[2J");
 }
 
 static void freeCompletions(linenoiseCompletions *lc)
@@ -44,7 +48,7 @@ static void freeCompletions(linenoiseCompletions *lc)
 
 static void linenoiseBeep(void)
 {
-	serial.puts("\x7");
+	serial1.putstr("\x7");
 }
 
 static int completeLine(struct linenoiseState *ls)
@@ -77,7 +81,7 @@ static int completeLine(struct linenoiseState *ls)
 				refreshLine(ls);
 			}
 
-			c = serial.getc();
+			c = serial1.getch();
 
 			switch (c) {
 			case TAB: /* tab */
@@ -151,18 +155,18 @@ static void refreshSingleLine(struct linenoiseState *l)
 	}
 
 	/* Cursor to left edge */
-	serial.puts("\x1b[0G");
+	serial1.putstr("\x1b[0G");
 	/* Write the prompt and the current buffer content */
-	serial.puts(l->prompt);
-	serial.puts(buf);
+	serial1.putstr(l->prompt);
+	serial1.putstr(buf);
 	/* Erase to right */
-	serial.puts("\x1b[0K");
+	serial1.putstr("\x1b[0K");
 	/* Move cursor to original position. */
 	char sq[] = "\x1b[0G\x1b[00C"; //the max columes of Terminal environment is 80
 	/* Set the count of moving cursor */
 	sq[6] = (pos + plen) / 10 + 0x30;
 	sq[7] = (pos + plen) % 10 + 0x30;
-	serial.puts(sq);
+	serial1.putstr(sq);
 }
 
 static void refreshLine(struct linenoiseState *l)
@@ -186,7 +190,7 @@ void linenoiseEditInsert(struct linenoiseState *l, int c)
 			if ((!mlmode && l->plen + l->len < l->cols) /* || mlmode */) {
 				/* Avoid a full update of the line in the
 				 * trivial case. */
-				serial.putc(c);
+				serial1.putch(c);
 
 			} else {
 				refreshLine(l);
@@ -304,13 +308,13 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 	 * initially is just an empty string. */
 	linenoiseHistoryAdd("");
 
-	serial.puts(prompt);
+	serial1.putstr(prompt);
 
 	while (1) {
 		char c;
 		char seq[2] = {0};
 
-		c = serial.getc();
+		c = serial1.getch();
 
 		/* Only autocomplete when the callback is set. */
 		if (c == 9 && completionCallback != NULL) {
@@ -381,8 +385,8 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 
 		/* escape sequence */
 		case ESC:
-			seq[0] = serial.getc();
-			seq[1] = serial.getc();
+			seq[0] = serial1.getch();
+			seq[1] = serial1.getch();
 
 			if (seq[0] == ARROW_PREFIX && seq[1] == LEFT_ARROW) {
 				/* Left arrow */
@@ -447,7 +451,7 @@ static int linenoiseRaw(char *buf, size_t buflen, const char *prompt)
 	int count;
 
 	count = linenoiseEdit(buf, buflen, prompt);
-	serial.puts("\n\r");
+	serial1.putstr("\n\r");
 
 	return count;
 }

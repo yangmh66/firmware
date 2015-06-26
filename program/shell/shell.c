@@ -2,6 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "usart.h"
+
+#include "linenoise.h"
+#include "parser.h"
+#include "shell.h"
+
 /* Shell Command handlers */
 void shell_unknown_cmd(char parameter[][MAX_CMD_LEN], int par_cnt);
 void shell_clear(char parameter[][MAX_CMD_LEN], int par_cnt);
@@ -36,16 +42,13 @@ void shell_linenoise_completion(const char *buf, linenoiseCompletions *lc)
 	}
 }
 
-void shell_task()
+void shell_task(void)
 {
-	//Waiting for system finish initialize
-	while (system_status != SYSTEM_INITIALIZED);
-
 	/* Clear the screen */
-	serial.printf("\x1b[H\x1b[2J");
+	serial1.printf("\x1b[H\x1b[2J");
 	/* Show the prompt messages */
-	serial.printf("UrsusPilot onboard shell\n\r");
-	serial.printf("Please type \"help\" to get more informations\n\r");
+	serial1.printf("UrsusPilot onboard shell\n\r");
+	serial1.printf("Please type \"help\" to get more informations\n\r");
 
 	while (1) {
 		linenoiseSetCompletionCallback(shell_linenoise_completion);
@@ -65,7 +68,7 @@ void shell_task()
 /**** Customize command function ******************************************************/
 void shell_unknown_cmd(char parameter[][MAX_CMD_LEN], int par_cnt)
 {
-	serial.printf("Command not found\n\r");
+	serial1.printf("Command not found\n\r");
 }
 
 void shell_clear(char parameter[][MAX_CMD_LEN], int par_cnt)
@@ -75,29 +78,28 @@ void shell_clear(char parameter[][MAX_CMD_LEN], int par_cnt)
 
 void shell_help(char parameter[][MAX_CMD_LEN], int par_cnt)
 {
-	serial.printf("\n\rSupport commands:\n\r");
-	serial.printf("clear  \tClear the screen\n\r");
-	serial.printf("help \tShow the list of all commands\n\r");
+	serial1.printf("\n\rSupport commands:\n\r");
+	serial1.printf("clear  \tClear the screen\n\r");
+	serial1.printf("help \tShow the list of all commands\n\r");
 }
 
 void shell_license(char parameter[][MAX_CMD_LEN], int par_cnt)
 {
-	serial.printf("Project UrsusPilot\n\r");
+	serial1.printf("Project UrsusPilot\n\r");
 
-	serial.printf("Copyright (c) 2015 - MIT License\n\r\n\r");
+	serial1.printf("Copyright (c) 2015 - MIT License\n\r\n\r");
 
-	serial.printf("QCopterFC\n\r");
-	serial.printf("Wen-Hung Wang <Hom19910422@gmail.com>\n\r\n\r");
+	serial1.printf("QCopterFC\n\r");
+	serial1.printf("Wen-Hung Wang <Hom19910422@gmail.com>\n\r\n\r");
 
-	serial.printf("Linenoise\n\r");
-	serial.printf("Antirez <antirez@gmail.com>\n\r\n\r");
+	serial1.printf("Linenoise\n\r");
+	serial1.printf("Antirez <antirez@gmail.com>\n\r\n\r");
 
-	serial.printf("Contributors of UrsusPilot\n\r");
-	serial.printf("Da-Feng Huang <fantasyboris@gmail.com>\n\r");
-	serial.printf("Cheng-De Liu <zxc2694zxc2694@gmail.com>\n\r");
-	serial.printf("Cheng-Han Yang <poemofking@gmail.com>\n\r");
-	serial.printf("Shengwen Cheng <shengwen1997.tw@gmail.com>\n\r");
-	serial.printf("Ming <ming6842@hotmail.com>\n\r");
-	serial.printf("Jack Hsu <jackhsu98@gmail.com>\n\r");
+	serial1.printf("Contributors of UrsusPilot\n\r");
+	serial1.printf("Da-Feng Huang <fantasyboris@gmail.com>\n\r");
+	serial1.printf("Cheng-De Liu <zxc2694zxc2694@gmail.com>\n\r");
+	serial1.printf("Cheng-Han Yang <poemofking@gmail.com>\n\r");
+	serial1.printf("Shengwen Cheng <shengwen1997.tw@gmail.com>\n\r");
+	serial1.printf("Ming <ming6842@hotmail.com>\n\r");
+	serial1.printf("Jack Hsu <jackhsu98@gmail.com>\n\r");
 }
-
