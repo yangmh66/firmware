@@ -65,6 +65,7 @@ static void enable_usart1(void)
 
 	USART_Init(USART1, &USART_InitStruct);
 	USART_Cmd(USART1, ENABLE);
+	USART_ClearFlag(USART1, USART_FLAG_TC);
 }
 
 static void enable_usart2(void)
@@ -248,7 +249,8 @@ static void enable_uart8(void)
 
 	USART_Init(UART8, &USART_InitStruct);
 	USART_Cmd(UART8, ENABLE);
-	
+	USART_ClearFlag(UART8, USART_FLAG_TC);
+
 	/* DMA Initialization */
 	DMA_DeInit(DMA1_Stream6);
 
@@ -267,7 +269,7 @@ void usart_init()
 
 static uint8_t usart1_getch(void)
 {
-	while(USART_GetITStatus(USART1, USART_IT_RXNE) == RESET);
+	while(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
 
 	return USART_ReceiveData(USART1);
 }
@@ -425,7 +427,7 @@ void usart3_send(char str)
 
 static uint8_t uart8_getch(void)
 {
-	while(USART_GetITStatus(UART8, USART_IT_RXNE) == RESET);
+	while(USART_GetFlagStatus(UART8, USART_FLAG_RXNE) == RESET);
 
 	return USART_ReceiveData(UART8);
 }
