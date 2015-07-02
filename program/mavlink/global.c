@@ -11,6 +11,8 @@
 
 #define QUADCOPTER 0
 
+void eeprom_debug_print(void);
+
 bool eeprom_is_written;
 
 int modifiable_data_cnt = 0;
@@ -113,6 +115,8 @@ void init_global_data(void)
 	
 	if(eeprom_is_written == true) {
 		load_global_data_from_eeprom();
+
+		eeprom_debug_print();
 	} else {
 		/* Clear the EEPROM */
 		uint8_t buffer[1024] = {'\0'};
@@ -402,17 +406,29 @@ int save_global_data_into_eeprom(int index)
 			break;
 		}
 
-		if(checksum_verify != checksum) data_is_correct = false;
+		if(checksum_verify != checksum) {
+			data_is_correct = false;
+			printf("<Checksum ERROR>\n\r");
+		}
 
 		if(data_is_correct == false)
-			printf("EEPROM payload check is failed!\n"); //TODO:Data is not correct, handle this situation!
+			printf("[address : %d]Data check is failed\n\r", eeprom_address); //TODO:Data is not correct, handle this situation!
+		else {
+			printf("[address : %d] write : ", eeprom_address);
+
+			int i;
+			for(i = 0; i < 4; i++) {
+				printf("%d ", buffer_verify[i]);
+			}
+
+			printf("-> value : %f (%d)\n\r", data_eeprom.float_value, checksum_verify);
+		}
 
 		/* Set up the first byte of eeprom (data = global data count) */
 		if(eeprom_is_written == false) {
 			eeprom_is_written = true;
 		}
 	}
-
 
 	return GLOBAL_SUCCESS;
 }
@@ -481,4 +497,37 @@ void load_global_data_from_eeprom(void)
 			eeprom_address += type_size + 1;
 		}
 	}
+}
+
+void eeprom_debug_print(void)
+{
+	bool parameter_config;
+	uint16_t eeprom_address;
+
+	Data data;
+	uint8_t eeprom_data[5] = {0};
+	uint8_t checksum = 0;
+
+	int i, j;
+	for(i = 0; i < get_global_data_count(); i++) {
+		get_global_data_parameter_config_status(i, &parameter_config);
+
+		if(parameter_config == true) {
+			get_global_data_eeprom_address(i , &eeprom_address);
+
+			eeprom.read(eeprom_data, eeprom_address, 4);
+			memcpy(&data, eeprom_data, 4);
+			memcpy(&checksum, eeprom_data + 4, 1);
+
+			printf("[address : %d] ", eeprom_address);
+
+			for(j = 0; j < 4; j++) {
+				printf("%d ", eeprom_data[i]);
+			}
+
+			printf("-> value : %f (%d)\n\r", data.float_value, checksum);
+		}
+	}
+
+	printf("\n\r");
 }
