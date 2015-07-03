@@ -107,21 +107,15 @@ void init_global_data(void)
 			modifiable_data_cnt++;
 	}
 
-	/* If first byte of EEPROM is equal to the global data count, this means 
-	   the EEPROM had been written */	
-	uint8_t eeprom_first_byte = '\0';
-	eeprom.read(&eeprom_first_byte, 0, 1);
-	eeprom_is_written = (eeprom_first_byte == get_global_data_count() ? true : false);
-	
-	if(eeprom_is_written == true) {
-		load_global_data_from_eeprom();
+	load_global_data_from_eeprom();
 
-		eeprom_debug_print();
-	} else {
+	if(eeprom_is_written == false) {
 		/* Clear the EEPROM */
 		uint8_t buffer[1024] = {'\0'};
 		eeprom.write(buffer, 0, 1024);
 	}
+
+	eeprom_debug_print();
 } 
 
 /**
@@ -435,14 +429,19 @@ int save_global_data_into_eeprom(int index)
 
 void load_global_data_from_eeprom(void)
 {
+	/* Load the data from eeprom */
 	uint8_t eeprom_data[5] = {0};
+	eeprom.read(eeprom_data, 0, 1);
+
+	/* If first byte's value of EEPROM is equal to the global data count, it means 
+	   the EEPROM has been written */	
+	eeprom_is_written = (eeprom_data[0] == get_global_data_count() ? true : false);
+
+	bool parameter_config;
 	/* Start from second byte, 
 	 * First byte: check the eeprom has been use or not */
 	uint16_t eeprom_address = 1;
 	uint8_t checksum;
-
-	bool parameter_config;
-
 	Type type;
 	uint8_t type_size;
 	Data data;
@@ -482,15 +481,17 @@ void load_global_data_from_eeprom(void)
 				break;
 			}
 
-			/* Read the data from the eeprom */
-			eeprom.read(eeprom_data, eeprom_address, type_size + 1);
-			memcpy(&data, eeprom_data, type_size);
-			memcpy(&checksum, eeprom_data + type_size, 1);
-
-			if(checksum_test(eeprom_data, type_size, checksum) == 0) {
-				set_global_data_value(i, type, DATA_CAST(data));
-			} else {
-				printf("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
+			if(eeprom_is_written == true) {
+				/* Read the data from the eeprom */
+				eeprom.read(eeprom_data, eeprom_address, type_size + 1);
+				memcpy(&data, eeprom_data, type_size);
+				memcpy(&checksum, eeprom_data + type_size, 1);
+	
+				if(checksum_test(eeprom_data, type_size, checksum) == 0) {
+					set_global_data_value(i, type, DATA_CAST(data));
+				} else {
+					printf("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
+				}
 			}
 
 			//One more byte for checksum
