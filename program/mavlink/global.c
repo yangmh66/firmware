@@ -516,17 +516,21 @@ void eeprom_debug_print(void)
 		if(parameter_config == true) {
 			get_global_data_eeprom_address(i , &eeprom_address);
 
-			eeprom.read(eeprom_data, eeprom_address, 4);
-			memcpy(&data, eeprom_data, 4);
-			memcpy(&checksum, eeprom_data + 4, 1);
-
+			eeprom.read(eeprom_data, eeprom_address, sizeof(float) + 1);
+			memcpy(&data, eeprom_data, sizeof(float));
+			memcpy(&checksum, eeprom_data + sizeof(float), 1);
+			
 			printf("[address : %d] ", eeprom_address);
 
-			for(j = 0; j < 4; j++) {
-				printf("%d ", eeprom_data[j]);
+			for(j = 0; j < 5; j++) {
+				if(j != 4) 
+					printf("%d ", eeprom_data[j]);
+				else
+					printf("(%d) ", eeprom_data[j]);
 			}
 
-			printf("-> value : %f (%d)\n\r", data.float_value, checksum);
+			printf("\n\r");
+			//printf("-> value : %f (%d)\n\r", data.float_value, eeprom_data[4]);
 		}
 	}
 
