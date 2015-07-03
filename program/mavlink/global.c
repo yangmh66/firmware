@@ -523,7 +523,7 @@ void eeprom_debug_print(void)
 			printf("[address : %d] ", eeprom_address);
 
 			for(j = 0; j < 4; j++) {
-				printf("%d ", eeprom_data[i]);
+				printf("%d ", eeprom_data[j]);
 			}
 
 			printf("-> value : %f (%d)\n\r", data.float_value, checksum);
