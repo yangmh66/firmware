@@ -109,11 +109,8 @@ void init_global_data(void)
 
 	load_global_data_from_eeprom();
 
-	if(eeprom_is_written == false) {
-		/* Clear the EEPROM */
-		uint8_t buffer[1024] = {'\0'};
-		eeprom.write(buffer, 0, 1024);
-	}
+	if(eeprom_is_written == false)
+		eeprom.clear();
 
 	eeprom_debug_print();
 } 

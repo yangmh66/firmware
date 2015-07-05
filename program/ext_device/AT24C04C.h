@@ -5,6 +5,7 @@
 typedef struct {
 	int (*write)(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 	int (*read)(uint8_t *data, uint16_t eeprom_address, uint16_t count);
+	void (*clear)(void);
 } eeprom_t;
 
 extern eeprom_t eeprom;

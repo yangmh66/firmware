@@ -23,10 +23,12 @@ int timeout;
 
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count);
+void eeprom_clear(void);
 
 eeprom_t eeprom = {
 	.read = eeprom_read,
-	.write = eeprom_write
+	.write = eeprom_write,
+	.clear = eeprom_clear
 };
 
 static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word_address, 
@@ -303,4 +305,11 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 	}
 
 	return EEPROM_SUCCESS;
+}
+
+void eeprom_clear(void)
+{
+        //Clear EEPROM
+	uint8_t buffer[1024] = {'\0'};
+	eeprom.write(buffer, 0, 1024);
 }
