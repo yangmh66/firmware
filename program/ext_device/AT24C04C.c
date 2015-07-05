@@ -73,9 +73,14 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
 	Delay_1us(5000);
 
 	/* Restart the I2C */
-	i2c_restart:
 	I2C_AcknowledgeConfig(I2C1, DISABLE);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
+
+	return eeprom_i2c_status;
+
+	i2c_restart:
+	I2C_DeInit(I2C1);
+	enable_i2c1();
 
 	return eeprom_i2c_status;
 }
@@ -212,10 +217,15 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 		I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
 	}
 
-	/* Restart the I2C */
-	i2c_restart:
 	I2C_AcknowledgeConfig(I2C1, DISABLE);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
+
+	return eeprom_i2c_status;
+
+	/* Restart the I2C */
+	i2c_restart:
+	I2C_DeInit(I2C1);
+	enable_i2c1();
 
 	return eeprom_i2c_status;
 }
