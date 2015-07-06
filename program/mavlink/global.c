@@ -512,9 +512,9 @@ void clear_eeprom_pending_flag(void)
 	eeprom_pending_flag = false;
 }
 
-int check_eeprom_pending_status(void)
+bool is_eeprom_pending_to_save(void)
 {
-	return (eeprom_pending_flag == true) ? 1 : 0;
+	return (eeprom_pending_flag == true) ? true : false;
 }
 
 void eeprom_debug_print(void)

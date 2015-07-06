@@ -130,7 +130,7 @@ void flight_control_task(void)
 			/* Handle EEPROM's request  */
 			if(my_rc.safety == ENGINE_OFF) {
 				//The drone is disarm, if eeprom's task is not finished, execute the task
-				if(check_eeprom_pending_status() == 1)
+				if(is_eeprom_pending_to_save() == true)
 					eeprom_task_execute();
 			} else {
 				//Suspend the eeprom task while the drone is going to fly
