@@ -507,6 +507,11 @@ void set_eeprom_pending_flag(void)
 	eeprom_pending_flag = true;
 }
 
+void clear_eeprom_pending_flag(void)
+{
+	eeprom_pending_flag = false;
+}
+
 int check_eeprom_pending_status(void)
 {
 	return (eeprom_pending_flag == true) ? 1 : 0;

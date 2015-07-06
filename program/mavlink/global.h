@@ -120,6 +120,7 @@ int get_global_data_eeprom_address(int index, uint16_t *eeprom_address);
 int save_global_data_into_eeprom(int index);
 void load_global_data_from_eeprom(void);
 void set_eeprom_pending_flag(void);
+void clear_eeprom_pending_flag(void);
 int check_eeprom_pending_status(void);
 
 #endif
