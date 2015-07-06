@@ -1,13 +1,16 @@
 /* Flight stabilizer and controller engine */
 
+#include <stdbool.h>
+
 #include "flight_controller.h"
+#include "eeprom_task.h"
 
-	/* GPS localizer initialization */
-	UBXvelned_t GPS_velocity_NED;
-	UBXsol_t GPS_solution_info;
-	UBXposLLH_t GPS_position_LLH;
+/* GPS localizer initialization */
+UBXvelned_t GPS_velocity_NED;
+UBXsol_t GPS_solution_info;
+UBXposLLH_t GPS_position_LLH;
 
-	vertical_data_t vertical_filtered_data;
+vertical_data_t vertical_filtered_data;
 
 void flight_control_task(void)
 {
@@ -123,6 +126,18 @@ void flight_control_task(void)
 			PID_output(&my_rc,&pid_roll_info,&pid_pitch_info,&pid_yaw_rate_info,&pid_Zd_info);
 
 			update_radio_control_input(&my_rc);
+
+			/* Handle EEPROM's request  */
+			if(my_rc.safety == ENGINE_OFF) {
+				//The drone is disarm, if eeprom's task is not finished, execute the task
+				if(check_eeprom_pending_status() == 1)
+					eeprom_task_execute();
+			} else {
+				//Suspend the eeprom task while the drone is going to fly
+				if(is_eeprom_task_running() == true)
+					eeprom_task_suspend();
+			}
+			
 			PID_rc_pass_command(&attitude,&pid_roll_info,&pid_pitch_info,&pid_heading_info,&pid_Z_info,&pid_Zd_info,&pid_nav_info,&my_rc);
 
 			// while(estimator_trigger_flag==0);

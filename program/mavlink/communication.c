@@ -16,6 +16,7 @@
 #include "communication.h"
 #include "command_parser.h"
 #include "mission.h"
+#include "eeprom_task.h"
 #include "FreeRTOS.h"
 #include "system_time.h"
 #include "io.h"
@@ -203,7 +204,6 @@ void ground_station_task(void)
 
 		mavlink_parse_received_cmd(&received_msg);
 		cnt++;
-		
 	}
 }
 
