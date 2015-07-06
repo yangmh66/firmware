@@ -14,6 +14,7 @@
 #include "global.h"
 #include "communication.h"
 #include "mission.h"
+#include "eeprom_task.h"
 #include "system_time.h"
 #include "navigation.h"
 #include "radio_control.h"
@@ -401,7 +402,8 @@ void mission_command(void)
 	    case MAV_CMD_COMPONENT_ARM_DISARM:
 		break;
 	    case MAV_CMD_PREFLIGHT_STORAGE:
-	    {    uint8_t safty_channel;
+	    { 
+		uint8_t safty_channel;
 		read_global_data_value(SAFTY_BUTTON, DATA_POINTER_CAST(&safty_channel));  
 
 		/* Check the safty button */
@@ -414,25 +416,8 @@ void mission_command(void)
 			/* Parameter config: Read EEPROM */
 			load_global_data_from_eeprom();
 		} else {
-			/* Parameter config: Write EEPROM */
-
-			/* Ensure the data will fully writting into the eeprom by checking
-			 * the first byte */
-			eeprom.write('\0', 0, 1); //Clear the first byte
-
-			int i;
-			for(i = 0; i < get_global_data_count(); i++) {
-				bool parameter_config;
-				get_global_data_parameter_config_status(i, &parameter_config);
-
-				/* Ensure the data will fully writting into the eeprom by checking
-				 * the first byte */
-				if(parameter_config == true)
-					save_global_data_into_eeprom(i);
-			}
-
-			uint8_t global_data_count = get_global_data_count();
-			eeprom.write(&global_data_count, 0, 1);
+			//Wake up eeprom_write_task to save the data
+			eeprom_task_execute();
 		}
 		break;
 	    }

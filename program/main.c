@@ -17,21 +17,25 @@
 
 #include "global.h"
 #include "communication.h"
+#include "eeprom_task.h"
 #include "system_time.h"
 #include "lea6h_ubx.h"
+
 extern uint8_t estimator_trigger_flag;
 
 /* FreeRTOS */
+xTaskHandle eeprom_save_task_handle;
+xTimerHandle xTimers[1];
 extern xSemaphoreHandle serial_tx_wait_sem;
 extern xQueueHandle serial_rx_queue;
 extern xQueueHandle gps_serial_queue;
-xTimerHandle xTimers[1];
 
 void vApplicationStackOverflowHook( xTaskHandle xTask, signed char *pcTaskName );
 void vApplicationIdleHook(void);
 void vApplicationMallocFailedHook(void);
 void boot_time_timer(void);
 void gpio_rcc_init(void);
+
 void gpio_rcc_init(void)
 {
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | 
@@ -113,6 +117,15 @@ int main(void)
 	);
 
 	xTaskCreate(
+		(pdTASK_CODE)eeprom_save_task,
+		(signed portCHAR *)"eeprom save task",
+		1024,
+		NULL,
+		tskIDLE_PRIORITY + 4,
+		&eeprom_save_task_handle
+	);
+
+	xTaskCreate(
 		(pdTASK_CODE)gps_receive_task,
 		(signed portCHAR *) "gps receive task",
 		2048,
@@ -120,6 +133,9 @@ int main(void)
 		tskIDLE_PRIORITY + 8, NULL
 
 	);
+
+	vTaskSuspend(eeprom_save_task_handle);
+
 	vTaskStartScheduler();
 
 	return 0;
