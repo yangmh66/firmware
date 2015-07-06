@@ -405,8 +405,10 @@ void mission_command(void)
 		read_global_data_value(SAFTY_BUTTON, DATA_POINTER_CAST(&safty_channel));  
 
 		/* Check the safty button */
-		if(safty_channel != ENGINE_OFF) 
+		if(safty_channel != ENGINE_OFF) {
+			set_eeprom_pending_flag();
 			break;
+		}
 
 		if((int)mmcl.param1 == 0) {
 			/* Parameter config: Read EEPROM */

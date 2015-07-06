@@ -15,6 +15,11 @@ void eeprom_debug_print(void);
 
 bool eeprom_is_written;
 
+/* EEPROM Should not be written or read while flying, trigger this
+ * flag so next time when the safety button is on (Disarm), save 
+ * the data back into the EEPROM */
+bool eeprom_pending_flag;
+
 int modifiable_data_cnt = 0;
 global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
 	/* global data information */
@@ -495,6 +500,16 @@ void load_global_data_from_eeprom(void)
 			eeprom_address += type_size + 1;
 		}
 	}
+}
+
+void set_eeprom_pending_flag(void)
+{
+	eeprom_pending_flag = true;
+}
+
+int check_eeprom_pending_status(void)
+{
+	return (eeprom_pending_flag == true) ? 1 : 0;
 }
 
 void eeprom_debug_print(void)
