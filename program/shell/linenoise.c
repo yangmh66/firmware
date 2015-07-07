@@ -373,9 +373,6 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 		if (c == 9 && completionCallback != NULL) {
 			c = completeLine(&l);
 
-			/* Return on errors */
-			if (c < 0) return l.len;
-
 			/* Read next character when 0 */
 			if (c == 0) continue;
 		}
@@ -519,10 +516,8 @@ int linenoiseHistoryAdd(const char *line)
 	if (history_max_len == 0) return 0;
 
 	if (history == NULL) {
-		history = history_static_buffer;
+		history = (char **)(history_static_buffer[history_used_count]);
 		history_used_count++;
-
-		if (history == NULL) return 0;
 
 		memset(history, 0, (sizeof(char *)*history_max_len));
 	}
