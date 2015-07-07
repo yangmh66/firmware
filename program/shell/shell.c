@@ -64,7 +64,7 @@ void shell_task(void)
 
 		commandExec(shell_text, &shell_cd, shellCmd_list, SHELL_CMD_CNT);
 
-		//linenoiseHistoryAdd(shell_text);
+		linenoiseHistoryAdd(shell_text);
 	}
 }
 /**** Customize command function ******************************************************/

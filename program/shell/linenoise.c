@@ -5,8 +5,15 @@
 
 #include "linenoise.h"
 
-#define LINENOISE_DEFAULT_HISTORY_MAX_LEN 100
-#define LINENOISE_MAX_LINE 256 //4096 is too much to this environment, it will crash!
+/* Be carefull: The systerm resource is much limit under the embedded systerm
+ * environment, it may crash if array size is too big */
+#define LINENOISE_DEFAULT_HISTORY_MAX_LEN 20
+#define LINENOISE_MAX_LINE 50
+
+/* The origional implementation of Linenoise is depends on dynamic memory operating
+ * functions, it is better to implement with static control in this environment*/
+char history_static_buffer[LINENOISE_DEFAULT_HISTORY_MAX_LEN][LINENOISE_MAX_LINE];
+int history_used_count = 0;
 
 struct linenoiseState {
 	char *buf;          /* Edited line buffer. */
@@ -33,17 +40,6 @@ char **history = NULL;
 void linenoiseClearScreen(void)
 {
 	serial1.putstr("\x1b[H\x1b[2J");
-}
-
-static void freeCompletions(linenoiseCompletions *lc)
-{
-	size_t i;
-
-	for (i = 0; i < lc->len; i++)
-		free(lc->cvec[i]);
-
-	if (lc->cvec != NULL)
-		free(lc->cvec);
 }
 
 static void linenoiseBeep(void)
@@ -119,7 +115,6 @@ static int completeLine(struct linenoiseState *ls)
 		}
 	}
 
-	freeCompletions(&lc);
 	return c; /* Return last read character */
 }
 
@@ -230,8 +225,9 @@ static void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
 	if (history_len > 1) {
 		/* Update the current history entry before to
 		 * overwrite it with the next one. */
-		free(history[history_len - 1 - l->history_index]);
-		history[history_len - 1 - l->history_index] = strdup(l->buf);
+		strcpy(history_static_buffer[history_used_count], l->buf);
+		history[history_len - 1 - l->history_index] = history_static_buffer[history_used_count];
+		history_used_count++;
 		/* Show the new entry */
 		l->history_index += (dir == LINENOISE_HISTORY_PREV) ? 1 : -1;
 
@@ -330,7 +326,6 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 		switch (c) {
 		case ENTER:    /* enter */
 			history_len--;
-			free(history[history_len]);
 			return (int)l.len;
 
 		case CTRL_C:
@@ -348,7 +343,6 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 
 			} else {
 				history_len--;
-				free(history[history_len]);
 				return -1;
 			}
 
@@ -465,29 +459,26 @@ void linenoise(const char *prompt, char *result_str)
 
 int linenoiseHistoryAdd(const char *line)
 {
-	char *linecopy;
-
 	if (history_max_len == 0) return 0;
 
 	if (history == NULL) {
-		history = (char **)malloc(sizeof(char *)*history_max_len);
+		history = history_static_buffer;
+		history_used_count++;
 
 		if (history == NULL) return 0;
 
 		memset(history, 0, (sizeof(char *)*history_max_len));
 	}
 
-	linecopy = strdup(line);
-
-	if (!linecopy) return 0;
+	strcpy(history_static_buffer[history_used_count], line);
 
 	if (history_len == history_max_len) {
-		free(history[0]);
 		memmove(history, history + 1, sizeof(char *) * (history_max_len - 1));
 		history_len--;
 	}
 
-	history[history_len] = linecopy;
+	history[history_len] = history_static_buffer[history_used_count];
+	history_used_count++;
 	history_len++;
 	return 1;
 }
