@@ -15,11 +15,15 @@ bool task_had_been_suspended;
 
 void eeprom_task_execute(void)
 {
+	clear_eeprom_pending_flag();
+
 	vTaskResume(eeprom_save_task_handle);
 }
 
 void eeprom_task_suspend(void)
 {
+	set_eeprom_pending_flag();
+
 	task_had_been_suspended = true;
 
 	vTaskSuspend(eeprom_save_task_handle);
@@ -53,8 +57,6 @@ void eeprom_save_task(void)
 		uint8_t global_data_count = get_global_data_count();
 		eeprom.write(&global_data_count, 0, 1);
 
-		clear_eeprom_pending_flag();
-
 		eeprom_task_is_running = false;
 
 		/* If the task has been suspended, the global data should be save into the EEPROM
@@ -62,8 +64,6 @@ void eeprom_save_task(void)
 		if(task_had_been_suspended == true) {
 			task_had_been_suspended = false;
 		} else {
-			clear_eeprom_pending_flag();
-
 			vTaskSuspend(NULL);
 		}
 	}
