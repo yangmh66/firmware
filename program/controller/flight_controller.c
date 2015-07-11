@@ -5,12 +5,12 @@
 #include "flight_controller.h"
 #include "eeprom_task.h"
 
-/* GPS localizer initialization */
-UBXvelned_t GPS_velocity_NED;
-UBXsol_t GPS_solution_info;
-UBXposLLH_t GPS_position_LLH;
+	/* GPS localizer initialization */
+	UBXvelned_t GPS_velocity_NED;
+	UBXsol_t GPS_solution_info;
+	UBXposLLH_t GPS_position_LLH;
 
-vertical_data_t vertical_filtered_data;
+	vertical_data_t vertical_filtered_data;
 
 void flight_control_task(void)
 {
