@@ -49,6 +49,10 @@ MAVLINK_SRCS=$(MAVLINK)/communication.c \
 	$(MAVLINK)/checksum.c \
 	$(MAVLINK)/eeprom_task.c
 
+SHELL_SRC=$(_SHELL)/linenoise.c \
+	$(_SHELL)/parser.c \
+	$(_SHELL)/shell.c
+
 CMSIS_SRCS= \
 	$(CMSIS)/FastMathFunctions/arm_cos_f32.c \
 	$(CMSIS)/FastMathFunctions/arm_sin_f32.c
@@ -86,3 +90,4 @@ SRCS += $(MAVLINK_SRCS)
 SRCS += $(CMSIS_SRCS)
 SRCS += $(STMF4_STD_DRIVER_SRCS)
 SRCS += $(BASIC_SRCS)
+SRCS += $(SHELL_SRC)

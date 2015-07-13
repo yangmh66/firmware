@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
+#include "usart.h"
 #include "AT24C04C.h"
 #include "global.h"
 #include "attitude_stabilizer.h"
@@ -404,20 +405,20 @@ int save_global_data_into_eeprom(int index)
 
 		if(checksum_verify != checksum) {
 			data_is_correct = false;
-			printf("<Checksum ERROR>\n\r");
+			serial2.printf("<Checksum ERROR>\n\r");
 		}
 
 		if(data_is_correct == false)
-			printf("[address : %d]Data check is failed\n\r", eeprom_address); //TODO:Data is not correct, handle this situation!
+			serial2.printf("[address : %d]Data check is failed\n\r", eeprom_address); //TODO:Data is not correct, handle this situation!
 		else {
-			printf("[address : %d] write : ", eeprom_address);
+			serial2.printf("[address : %d] write : ", eeprom_address);
 
 			int i;
 			for(i = 0; i < 4; i++) {
-				printf("%d ", buffer_verify[i]);
+				serial2.printf("%d ", buffer_verify[i]);
 			}
 
-			printf("-> value : %f (%d)\n\r", data_eeprom.float_value, checksum_verify);
+			serial2.printf("-> value : %f (%d)\n\r", data_eeprom.float_value, checksum_verify);
 		}
 
 		/* Set up the first byte of eeprom (data = global data count) */
@@ -492,7 +493,7 @@ void load_global_data_from_eeprom(void)
 				if(checksum_test(eeprom_data, type_size, checksum) == 0) {
 					set_global_data_value(i, type, DATA_CAST(data));
 				} else {
-					printf("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
+					serial2.printf("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
 				}
 			}
 
@@ -537,19 +538,19 @@ void eeprom_debug_print(void)
 			memcpy(&data, eeprom_data, sizeof(float));
 			memcpy(&checksum, eeprom_data + sizeof(float), 1);
 			
-			printf("[address : %d] ", eeprom_address);
+			serial2.printf("[address : %d] ", eeprom_address);
 
 			for(j = 0; j < 5; j++) {
 				if(j != 4) 
-					printf("%d ", eeprom_data[j]);
+					serial2.printf("%d ", eeprom_data[j]);
 				else
-					printf("(%d) ", eeprom_data[j]);
+					serial2.printf("(%d) ", eeprom_data[j]);
 			}
 
-			printf("\n\r");
-			//printf("-> value : %f (%d)\n\r", data.float_value, eeprom_data[4]);
+			serial2.printf("\n\r");
+			//serial2.printf("-> value : %f (%d)\n\r", data.float_value, eeprom_data[4]);
 		}
 	}
 
-	printf("\n\r");
+	serial2.printf("\n\r");
 }

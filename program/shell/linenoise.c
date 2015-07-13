@@ -1,10 +1,76 @@
-#include "QuadCopterConfig.h"
+/* Linenoise for embedded system
+ *
+ * Guerrilla line editing library against the idea that a line editing lib
+ * needs to be 20,000 lines of C code.
+ *
+ * You can find the latest source code at:
+ *
+ *   http://github.com/antirez/linenoise
+ *
+ * Does a number of crazy assumptions that happen to be true in 99.9999% of
+ * the 2010 UNIX computers around.
+ *
+ * ------------------------------------------------------------------------
+ *
+ * Copyright (c) 2010-2014, Salvatore Sanfilippo <antirez at gmail dot com>
+ * Copyright (c) 2010-2013, Pieter Noordhuis <pcnoordhuis at gmail dot com>
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *  *  Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *
+ *  *  Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * 
+ * ------------------------------------------------------------------------
+ *
+ * Contributors of linenoise for embedded system
+ *
+ * Sheng-Wen Cheng <shengwen1997.tw@gmail.com>
+ * Da-Feng Huang <fantasyboris@gmail.com>
+ *
+ * ------------------------------------------------------------------------
+ *
+ * References:
+ * - http://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+ * - http://www.3waylabs.com/nw/WWW/products/wizcon/vt220.html
+ */
 
 #include "string.h"
 #include "stdlib.h"
 
-#define LINENOISE_DEFAULT_HISTORY_MAX_LEN 100
-#define LINENOISE_MAX_LINE 256 //4096 is too much to this environment, it will crash!
+#include "usart.h"
+
+#include "linenoise.h"
+
+/* Be carefull: The systerm resource is much limit under the embedded systerm
+ * environment, it may crash if array size is too big */
+#define LINENOISE_DEFAULT_HISTORY_MAX_LEN 20
+#define LINENOISE_MAX_LINE 50
+
+/* The origional implementation of Linenoise is depends on dynamic memory operating
+ * functions, it is better to implement with static control in this environment*/
+char history_static_buffer[LINENOISE_DEFAULT_HISTORY_MAX_LEN][LINENOISE_MAX_LINE];
+int history_used_count = 0;
 
 struct linenoiseState {
 	char *buf;          /* Edited line buffer. */
@@ -30,23 +96,12 @@ char **history = NULL;
 
 void linenoiseClearScreen(void)
 {
-	serial.puts("\x1b[H\x1b[2J");
-}
-
-static void freeCompletions(linenoiseCompletions *lc)
-{
-	size_t i;
-
-	for (i = 0; i < lc->len; i++)
-		free(lc->cvec[i]);
-
-	if (lc->cvec != NULL)
-		free(lc->cvec);
+	serial1.putstr("\x1b[H\x1b[2J");
 }
 
 static void linenoiseBeep(void)
 {
-	serial.puts("\x7");
+	serial1.putstr("\x7");
 }
 
 static int completeLine(struct linenoiseState *ls)
@@ -79,7 +134,7 @@ static int completeLine(struct linenoiseState *ls)
 				refreshLine(ls);
 			}
 
-			c = serial.getc();
+			c = serial1.getch();
 
 			switch (c) {
 			case TAB: /* tab */
@@ -101,7 +156,7 @@ static int completeLine(struct linenoiseState *ls)
 
 				/* Update buffer and return */
 				if (i < lc.len) {
-					for (nwritten = 0; nwritten < ls->buflen; nwritten++) {
+					for (nwritten = 0; (size_t)nwritten < ls->buflen; nwritten++) {
 						ls->buf[nwritten] = lc.cvec[i][nwritten];
 
 						if (lc.cvec[i][nwritten] == '\0')
@@ -117,7 +172,6 @@ static int completeLine(struct linenoiseState *ls)
 		}
 	}
 
-	freeCompletions(&lc);
 	return c; /* Return last read character */
 }
 
@@ -153,18 +207,18 @@ static void refreshSingleLine(struct linenoiseState *l)
 	}
 
 	/* Cursor to left edge */
-	serial.puts("\x1b[0G");
+	serial1.putstr("\x1b[0G");
 	/* Write the prompt and the current buffer content */
-	serial.puts(l->prompt);
-	serial.puts(buf);
+	serial1.putstr(l->prompt);
+	serial1.putstr(buf);
 	/* Erase to right */
-	serial.puts("\x1b[0K");
+	serial1.putstr("\x1b[0K");
 	/* Move cursor to original position. */
 	char sq[] = "\x1b[0G\x1b[00C"; //the max columes of Terminal environment is 80
 	/* Set the count of moving cursor */
 	sq[6] = (pos + plen) / 10 + 0x30;
 	sq[7] = (pos + plen) % 10 + 0x30;
-	serial.puts(sq);
+	serial1.putstr(sq);
 }
 
 static void refreshLine(struct linenoiseState *l)
@@ -176,7 +230,7 @@ static void refreshLine(struct linenoiseState *l)
 	}
 }
 
-void linenoiseEditInsert(struct linenoiseState *l, int c)
+static void linenoiseEditInsert(struct linenoiseState *l, int c)
 {
 	if (l->len < l->buflen) {
 		if (l->len == l->pos) {
@@ -188,7 +242,7 @@ void linenoiseEditInsert(struct linenoiseState *l, int c)
 			if ((!mlmode && l->plen + l->len < l->cols) /* || mlmode */) {
 				/* Avoid a full update of the line in the
 				 * trivial case. */
-				serial.putc(c);
+				serial1.putch(c);
 
 			} else {
 				refreshLine(l);
@@ -205,7 +259,7 @@ void linenoiseEditInsert(struct linenoiseState *l, int c)
 	}
 }
 
-void linenoiseEditMoveLeft(struct linenoiseState *l)
+static void linenoiseEditMoveLeft(struct linenoiseState *l)
 {
 	if (l->pos > 0) {
 		l->pos--;
@@ -213,7 +267,7 @@ void linenoiseEditMoveLeft(struct linenoiseState *l)
 	}
 }
 
-void linenoiseEditMoveRight(struct linenoiseState *l)
+static void linenoiseEditMoveRight(struct linenoiseState *l)
 {
 	if (l->pos != l->len) {
 		l->pos++;
@@ -223,13 +277,14 @@ void linenoiseEditMoveRight(struct linenoiseState *l)
 
 #define LINENOISE_HISTORY_NEXT 0
 #define LINENOISE_HISTORY_PREV 1
-void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
+static void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
 {
 	if (history_len > 1) {
 		/* Update the current history entry before to
 		 * overwrite it with the next one. */
-		free(history[history_len - 1 - l->history_index]);
-		history[history_len - 1 - l->history_index] = strdup(l->buf);
+		strcpy(history_static_buffer[history_used_count], l->buf);
+		history[history_len - 1 - l->history_index] = history_static_buffer[history_used_count];
+		history_used_count++;
 		/* Show the new entry */
 		l->history_index += (dir == LINENOISE_HISTORY_PREV) ? 1 : -1;
 
@@ -249,7 +304,7 @@ void linenoiseEditHistoryNext(struct linenoiseState *l, int dir)
 	}
 }
 
-void linenoiseEditDelete(struct linenoiseState *l)
+static void linenoiseEditDelete(struct linenoiseState *l)
 {
 	if (l->len > 0 && l->pos < l->len) {
 		memmove(l->buf + l->pos, l->buf + l->pos + 1, l->len - l->pos - 1);
@@ -259,7 +314,7 @@ void linenoiseEditDelete(struct linenoiseState *l)
 	}
 }
 
-void linenoiseEditBackspace(struct linenoiseState *l)
+static void linenoiseEditBackspace(struct linenoiseState *l)
 {
 	if (l->pos > 0 && l->len > 0) {
 		memmove(l->buf + l->pos - 1, l->buf + l->pos, l->len - l->pos);
@@ -270,7 +325,7 @@ void linenoiseEditBackspace(struct linenoiseState *l)
 	}
 }
 
-void linenoiseEditDeletePrevWord(struct linenoiseState *l)
+static void linenoiseEditDeletePrevWord(struct linenoiseState *l)
 {
 	size_t old_pos = l->pos;
 	size_t diff;
@@ -306,20 +361,17 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 	 * initially is just an empty string. */
 	linenoiseHistoryAdd("");
 
-	serial.puts(prompt);
+	serial1.putstr(prompt);
 
 	while (1) {
 		char c;
 		char seq[2] = {0};
 
-		c = serial.getc();
+		c = serial1.getch();
 
 		/* Only autocomplete when the callback is set. */
 		if (c == 9 && completionCallback != NULL) {
 			c = completeLine(&l);
-
-			/* Return on errors */
-			if (c < 0) return l.len;
 
 			/* Read next character when 0 */
 			if (c == 0) continue;
@@ -328,7 +380,6 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 		switch (c) {
 		case ENTER:    /* enter */
 			history_len--;
-			free(history[history_len]);
 			return (int)l.len;
 
 		case CTRL_C:
@@ -346,7 +397,6 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 
 			} else {
 				history_len--;
-				free(history[history_len]);
 				return -1;
 			}
 
@@ -383,8 +433,8 @@ static int linenoiseEdit(char *buf, size_t buflen, const char *prompt)
 
 		/* escape sequence */
 		case ESC:
-			seq[0] = serial.getc();
-			seq[1] = serial.getc();
+			seq[0] = serial1.getch();
+			seq[1] = serial1.getch();
 
 			if (seq[0] == ARROW_PREFIX && seq[1] == LEFT_ARROW) {
 				/* Left arrow */
@@ -449,48 +499,38 @@ static int linenoiseRaw(char *buf, size_t buflen, const char *prompt)
 	int count;
 
 	count = linenoiseEdit(buf, buflen, prompt);
-	serial.puts("\n\r");
+	serial1.putstr("\n\r");
 
 	return count;
 }
 
-char *linenoise(const char *prompt)
+void linenoise(const char *prompt, char *result_str)
 {
-	char buf[LINENOISE_MAX_LINE];
-	int count;
+	int count = linenoiseRaw(result_str, LINENOISE_MAX_LINE, prompt);
 
-	count = linenoiseRaw(buf, LINENOISE_MAX_LINE, prompt);
-
-	if (count == -1) return NULL;
-
-	return strdup(buf);
+	if (count == -1) result_str[0] = '\0';
 }
 
 int linenoiseHistoryAdd(const char *line)
 {
-	char *linecopy;
-
 	if (history_max_len == 0) return 0;
 
 	if (history == NULL) {
-		history = (char **)malloc(sizeof(char *)*history_max_len);
-
-		if (history == NULL) return 0;
+		history = (char **)(history_static_buffer[history_used_count]);
+		history_used_count++;
 
 		memset(history, 0, (sizeof(char *)*history_max_len));
 	}
 
-	linecopy = strdup(line);
-
-	if (!linecopy) return 0;
+	strcpy(history_static_buffer[history_used_count], line);
 
 	if (history_len == history_max_len) {
-		free(history[0]);
 		memmove(history, history + 1, sizeof(char *) * (history_max_len - 1));
 		history_len--;
 	}
 
-	history[history_len] = linecopy;
+	history[history_len] = history_static_buffer[history_used_count];
+	history_used_count++;
 	history_len++;
 	return 1;
 }

@@ -25,20 +25,20 @@ void update_radio_control_input(radio_controller_t *rc_data)
 	set_global_data_value(MODE_BUTTON, UINT8, DATA_CAST(rc_data->mode));
 
 #ifdef DEBUG_RADIO_CONTROLLER
-	printf("%d,%d,%d,%d,",
+	serial2.printf("%d,%d,%d,%d,",
 		(int16_t) (rc_data->roll_control_input*100),	
 		(int16_t) (rc_data->pitch_control_input*100),
 		(int16_t) (rc_data->throttle_control_input),
 		(int16_t) (rc_data->yaw_rate_control_input*100));
 	if (rc_data->safety == ENGINE_ON) {
 
-			printf("ENGINE_ON,");
+			serial2.printf("ENGINE_ON,");
 	} else {
 
-			printf("ENGINE_OFF");
+			serial2.printf("ENGINE_OFF");
 
 	}
-	printf("\r\n");
+	serial2.printf("\r\n");
 	Delay_1us(100);
 #endif	
 }
@@ -76,11 +76,3 @@ void check_rc_safety_init(radio_controller_t *rc_controller_data)
 
 
 }
-
-
-
-
-
-
-
-

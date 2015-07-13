@@ -1,5 +1,6 @@
 #include <string.h>
 #include "stm32f4xx_conf.h"
+#include "usart.h"
 #include "AT24C04C.h"
 #include "delay.h"
 
@@ -80,7 +81,7 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
 	return eeprom_i2c_status;
 
 	i2c_restart:
-	printf("[I2C reinitialize]\n\r");
+	serial2.printf("[I2C reinitialize]\n\r");
 	I2C_DeInit(I2C1);
 	enable_i2c1();
 
@@ -225,7 +226,7 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 
 	/* Restart the I2C */
 	i2c_restart:
-	printf("[I2C reinitialize]\n\r");
+	serial2.printf("[I2C reinitialize]\n\r");
 	I2C_DeInit(I2C1);
 	enable_i2c1();
 

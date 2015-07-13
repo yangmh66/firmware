@@ -17,6 +17,7 @@
 
 #include "global.h"
 #include "communication.h"
+#include "shell.h"
 #include "eeprom_task.h"
 #include "system_time.h"
 #include "lea6h_ubx.h"
@@ -117,6 +118,15 @@ int main(void)
 	);
 
 	xTaskCreate(
+		(pdTASK_CODE)shell_task,
+		(signed portCHAR *)"shell task",
+		2048,
+		NULL,
+		tskIDLE_PRIORITY + 3,
+		NULL
+	);
+
+	xTaskCreate(
 		(pdTASK_CODE)eeprom_save_task,
 		(signed portCHAR *)"eeprom save task",
 		1024,
@@ -124,7 +134,7 @@ int main(void)
 		tskIDLE_PRIORITY + 4,
 		&eeprom_save_task_handle
 	);
-
+	
 	xTaskCreate(
 		(pdTASK_CODE)gps_receive_task,
 		(signed portCHAR *) "gps receive task",

@@ -12,7 +12,7 @@ typedef void(linenoiseCompletionCallback)(const char *, linenoiseCompletions *);
 void linenoiseSetCompletionCallback(linenoiseCompletionCallback *);
 void linenoiseAddCompletion(linenoiseCompletions *, char *);
 
-char *linenoise(const char *prompt);
+void linenoise(const char *prompt, char *result_str);
 int linenoiseHistoryAdd(const char *line);
 void linenoiseClearScreen(void);
 

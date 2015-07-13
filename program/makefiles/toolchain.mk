@@ -47,6 +47,7 @@ CFLAGS_INCLUDE=-I$(WORKSPACE_DIR)/ \
 	-I$(CMSIS) \
 	-I$(ST)/inc \
 	-I$(MAVLINK) \
+	-I$(_SHELL) \
 	-I$(MAVLINK_LIB) \
 	-I$(MAVLINK_LIB)/common
 
@@ -57,7 +58,7 @@ CFLAGS_DEFINE= \
         -D __FPU_USED=1 \
         -include $(BOARD_CONFIG) \
         -include $(DEBUG_CONFIG) \
-	-U printf -D printf=printf_base
+	-U printf
 
 CFLAGS=-g $(ARCH_FLAGS)\
 	${CFLAGS_INCLUDE} ${CFLAGS_DEFINE} \

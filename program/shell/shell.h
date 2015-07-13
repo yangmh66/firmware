@@ -6,6 +6,6 @@
 #define MAX_CMD_LEN 64 //256 is too big!
 #define MAX_PAR_CNT 10
 
-void shell_task();
+void shell_task(void);
 
 #endif
