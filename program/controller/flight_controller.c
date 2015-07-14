@@ -12,11 +12,12 @@
 
 	vertical_data_t vertical_filtered_data;
 
+imu_unscaled_data_t imu_unscaled_data;
+
 void flight_control_task(void)
 {
 	//uint8_t buffer[100];
 	/* State estimator initialization */
-	imu_unscaled_data_t imu_unscaled_data;
 	imu_data_t imu_raw_data;
 	imu_data_t imu_filtered_data;
 	imu_calibrated_offset_t imu_offset;
