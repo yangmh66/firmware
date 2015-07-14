@@ -2,7 +2,6 @@
 #include "led.h"
 #include "stm32f4xx_conf.h"
 #include "usart.h"
-#include "io.h"
 
 sys_time_t sys_time_manager = {
 	.sec = 0 ,

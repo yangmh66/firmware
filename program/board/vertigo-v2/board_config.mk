@@ -24,7 +24,6 @@ RADIO_CONTROLLER_SRCS = $(RADIO_CONTROLLER)/radio_control.c \
 
 COMMON_SRCS =$(COMMON)/test_common.c \
 	$(COMMON)/memory.c \
-	$(COMMON)/io.c \
 	$(COMMON)/std.c
 
 CONTROLLER_SRCS = $(CONTROLLER)/attitude_stabilizer.c \
