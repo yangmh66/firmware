@@ -51,7 +51,8 @@ MAVLINK_SRCS=$(MAVLINK)/communication.c \
 
 SHELL_SRC=$(_SHELL)/linenoise.c \
 	$(_SHELL)/parser.c \
-	$(_SHELL)/shell.c
+	$(_SHELL)/shell.c \
+	$(_SHELL)/calibrate.c
 
 CMSIS_SRCS= \
 	$(CMSIS)/FastMathFunctions/arm_cos_f32.c \
