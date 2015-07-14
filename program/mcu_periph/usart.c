@@ -1,14 +1,16 @@
 #include "stm32f4xx_conf.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
+
+#include "std.h"
+
 #include "usart.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
-
-#include "io.h"
 
 static char usart1_getch(void);
 static char uart8_getch(void);
@@ -295,7 +297,56 @@ static void usart1_putstr(const char *ptr)
 
 static int usart1_printf(const char *format, ...)
 {
-	return printf_base(usart1_putstr, format);
+	char str[128];
+	va_list para;
+	va_start(para, format);
+	int curr_pos = 0;
+	char ch[] = {'0', '\0'};
+	char integer[11];
+	str[0] = '\0';
+
+	while (format[curr_pos] != '\0') {
+		if (format[curr_pos] != '%') {
+			ch[0] = format[curr_pos];
+			strcat(str, ch);
+
+		} else {
+			switch (format[++curr_pos]) {
+			case 's':
+				strcat(str, va_arg(para, char *));
+				break;
+
+			case 'c':
+				ch[0] = (char)va_arg(para, int);
+				strcat(str, ch);
+				break;
+
+			case 'i':
+			case 'f':
+				strcat(str, ftoa(va_arg(para, double)));
+				break;
+
+			case 'd':
+				strcat(str, itoa(va_arg(para, int), integer));
+				break;
+
+			case 'u':
+				strcat(str, itoa(va_arg(para, unsigned), integer));
+				break;
+
+			default:
+				break;
+			}
+		}
+
+		curr_pos++;
+	}
+
+	va_end(para);
+
+	usart1_putstr(str);
+
+	return 1;
 }
 
 void usart2_dma_init()
@@ -452,5 +503,54 @@ static void uart8_putstr(const char *ptr)
 
 static int uart8_printf(const char *format, ...)
 {
-	return printf_base(uart8_putstr, format);
+	char str[128];
+	va_list para;
+	va_start(para, format);
+	int curr_pos = 0;
+	char ch[] = {'0', '\0'};
+	char integer[11];
+	str[0] = '\0';
+
+	while (format[curr_pos] != '\0') {
+		if (format[curr_pos] != '%') {
+			ch[0] = format[curr_pos];
+			strcat(str, ch);
+
+		} else {
+			switch (format[++curr_pos]) {
+			case 's':
+				strcat(str, va_arg(para, char *));
+				break;
+
+			case 'c':
+				ch[0] = (char)va_arg(para, int);
+				strcat(str, ch);
+				break;
+
+			case 'i':
+			case 'f':
+				strcat(str, ftoa(va_arg(para, double)));
+				break;
+
+			case 'd':
+				strcat(str, itoa(va_arg(para, int), integer));
+				break;
+
+			case 'u':
+				strcat(str, itoa(va_arg(para, unsigned), integer));
+				break;
+
+			default:
+				break;
+			}
+		}
+
+		curr_pos++;
+	}
+
+	va_end(para);
+
+	uart8_putstr(str);
+
+	return 1;
 }
