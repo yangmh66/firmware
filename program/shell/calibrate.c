@@ -44,40 +44,67 @@ static void accel_calibrate(void)
 
 	int print_delay = 0;
 
-	while(1) {
-		//Low pass filter
-		imu_calibrate_low_pass_filter(&imu_unscaled_data, &filtered_unscaled_data);
+	char axis[3] = {'x', 'y', 'z'};
+	char buffer, confirm_result;
 
-		//Search for maximum unscaled value of x axis
-		if(filtered_unscaled_data.acc[0] > calibrate_unscaled_data_max.acc[0])
-			calibrate_unscaled_data_max.acc[0] = filtered_unscaled_data.acc[0];
-		//Search for minimum unscaled value of x axis
-		else if(filtered_unscaled_data.acc[0] < calibrate_unscaled_data_min.acc[0])
-			calibrate_unscaled_data_min.acc[0] = filtered_unscaled_data.acc[0];
+	int i;
+	for(i = 0; i < 3; i++) {
 
-		//Search for maximum unscaled value of y axis
-		if(filtered_unscaled_data.acc[1] > calibrate_unscaled_data_max.acc[1])
-			calibrate_unscaled_data_max.acc[1] = filtered_unscaled_data.acc[1];
-		//Search for minimum unscaled value of y axis
-		else if(filtered_unscaled_data.acc[1] < calibrate_unscaled_data_min.acc[1])
-			calibrate_unscaled_data_min.acc[1] = filtered_unscaled_data.acc[1];
+		serial1.printf("Turn %c axis of drone to the ground and hold still\n\r", axis[i]);
+		serial1.printf("Press any key to start the calibration\n\r");
 
-		//Search for maximum unscaled value of z axis
-		if(filtered_unscaled_data.acc[2] > calibrate_unscaled_data_max.acc[2])
-			calibrate_unscaled_data_max.acc[2] = filtered_unscaled_data.acc[2];
-		//Search for minimum unscaled value of a axis
-		else if(filtered_unscaled_data.acc[2] < calibrate_unscaled_data_min.acc[2])
-			calibrate_unscaled_data_min.acc[2] = filtered_unscaled_data.acc[2];
+		serial1.getch();
 
-		print_delay++;
+		while(1) {
+			//Low pass filter
+			imu_calibrate_low_pass_filter(&imu_unscaled_data, &filtered_unscaled_data);
 
-		if(print_delay == 20000) {
-			serial1.printf("\x1b[H\x1b[2J");
-			serial1.printf("x max:%f x min:%f\n\r", calibrate_unscaled_data_max.acc[0], calibrate_unscaled_data_min.acc[0]);
-			serial1.printf("y max:%f y min:%f\n\r", calibrate_unscaled_data_max.acc[1], calibrate_unscaled_data_min.acc[1]);
-			serial1.printf("z max:%f z min:%f", calibrate_unscaled_data_max.acc[2], calibrate_unscaled_data_min.acc[2]);
-			
-			print_delay = 0;
+			//Search for maximum unscaled value
+			if(filtered_unscaled_data.acc[i] > calibrate_unscaled_data_max.acc[i])
+				calibrate_unscaled_data_max.acc[i] = filtered_unscaled_data.acc[i];
+			//Search for minimum unscaled value
+			else if(filtered_unscaled_data.acc[i] < calibrate_unscaled_data_min.acc[i])
+				calibrate_unscaled_data_min.acc[i] = filtered_unscaled_data.acc[i];
+
+			/* Interacting with the user */
+			buffer = serial1.receive();
+			if(buffer == 'n' || buffer == 'N') {
+				if(i != 2) {
+					confirm_result = shell_confirm("Finish calibrating and want to go to the next step? (y/n):");
+					
+					if(confirm_result == 'y' || confirm_result == 'Y') break;
+				} else {
+					confirm_result = shell_confirm("Do you want to save the calibration result? (y/n):");
+
+					if(confirm_result == 'y' || confirm_result == 'Y') {
+						set_global_data_value(ACCEL_X_MAX, FLOAT, DATA_CAST(calibrate_unscaled_data_max.acc[0]));
+						set_global_data_value(ACCEL_X_MIN, FLOAT, DATA_CAST(calibrate_unscaled_data_min.acc[0]));
+						set_global_data_value(ACCEL_Y_MAX, FLOAT, DATA_CAST(calibrate_unscaled_data_max.acc[1]));
+						set_global_data_value(ACCEL_Y_MIN, FLOAT, DATA_CAST(calibrate_unscaled_data_min.acc[1]));
+						set_global_data_value(ACCEL_Z_MAX, FLOAT, DATA_CAST(calibrate_unscaled_data_max.acc[2]));
+						set_global_data_value(ACCEL_Z_MIN, FLOAT, DATA_CAST(calibrate_unscaled_data_min.acc[2]));
+
+						eeprom_task_execute();
+					}
+
+					return;
+				}
+			}	
+
+			print_delay++;
+
+			if(print_delay == 20000) {
+				serial1.printf("\x1b[H\x1b[2J");
+				serial1.printf("[%c max]%f\t[%c min:%f]\n\r",
+					axis[i],
+					axis[i],
+					calibrate_unscaled_data_max.acc[i],
+					calibrate_unscaled_data_min.acc[i]
+				);
+				serial1.printf("Please press \'n\' if you are satisfy with these calibration result\n\r");
+
+				print_delay = 0;
+			}
 		}
 	}
 }
