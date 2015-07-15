@@ -3,6 +3,9 @@
 #include "usart.h"
 #include "imu.h"
 
+#include "global.h"
+#include "eeprom_task.h"
+
 #include "parser.h"
 #include "calibrate.h"
 
@@ -114,20 +117,37 @@ static void mag_calibrate(void)
 
 		buffer = serial1.receive();
 		if(buffer == 'q' || buffer == 'Q') {
-			//TODO:Save calibration into the eeprom
+			/* Confirm to save calibration results */
+			uint8_t confirm_result;
+			do {
+				serial1.printf("Are you sure you want to save these calibration results? (y/n):");
+				confirm_result = serial1.getch();
+				serial1.printf("%c\n\r", confirm_result);
 
-			serial1.printf("\n\r");
+				if(confirm_result == 'n' || confirm_result == 'N') break;
+			} while(confirm_result != 'y' && confirm_result != 'Y');
 
-			return;
+			if(confirm_result == 'y' || confirm_result == 'Y') {
+				set_global_data_value(MAG_X_MAX, FLOAT, DATA_CAST(calibrate_unscaled_data_max.mag[0]));
+				set_global_data_value(MAG_X_MIN, FLOAT, DATA_CAST(calibrate_unscaled_data_min.mag[0]));
+				set_global_data_value(MAG_Y_MAX, FLOAT, DATA_CAST(calibrate_unscaled_data_max.mag[1]));
+				set_global_data_value(MAG_Y_MIN, FLOAT, DATA_CAST(calibrate_unscaled_data_min.mag[1]));
+				set_global_data_value(MAG_Z_MAX, FLOAT, DATA_CAST(calibrate_unscaled_data_max.mag[2]));
+				set_global_data_value(MAG_Z_MIN, FLOAT, DATA_CAST(calibrate_unscaled_data_min.mag[2]));
+
+				eeprom_task_execute();
+
+				return;
+			}
 		}
 
 		print_delay++;
 
 		if(print_delay == 20000) {
 			serial1.printf("\x1b[H\x1b[2J");
-			serial1.printf("x max:%f x min:%f\n\r", calibrate_unscaled_data_max.mag[0], calibrate_unscaled_data_min.mag[0]);
-			serial1.printf("y max:%f y min:%f\n\r", calibrate_unscaled_data_max.mag[1], calibrate_unscaled_data_min.mag[1]);
-			serial1.printf("z max:%f z min:%f", calibrate_unscaled_data_max.mag[2], calibrate_unscaled_data_min.mag[2]);
+			serial1.printf("[x max]%f\t[x min]%f\n\r", calibrate_unscaled_data_max.mag[0], calibrate_unscaled_data_min.mag[0]);
+			serial1.printf("[y max]%f\t[y min]%f\n\r", calibrate_unscaled_data_max.mag[1], calibrate_unscaled_data_min.mag[1]);
+			serial1.printf("[z max]%f\t[z min]%f\n\r", calibrate_unscaled_data_max.mag[2], calibrate_unscaled_data_min.mag[2]);
 
 			print_delay = 0;
 		}
