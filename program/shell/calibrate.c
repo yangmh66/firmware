@@ -30,7 +30,6 @@ static void imu_calibrate_low_pass_filter(imu_unscaled_data_t *new_unscaled_data
 		(float)(new_unscaled_data->mag[1]) * offset_read_alpha + filtered_data->mag[1] * (1.0f - offset_read_alpha);
 	filtered_data->mag[2] = 
 		(float)(new_unscaled_data->mag[2]) * offset_read_alpha + filtered_data->mag[2] * (1.0f - offset_read_alpha);
-
 }
 
 static void accel_calibrate(void)
@@ -38,6 +37,8 @@ static void accel_calibrate(void)
 	calibrate_unscaled_data_max.acc[0] = calibrate_unscaled_data_min.acc[0] = (float)imu_unscaled_data.acc[0];
 	calibrate_unscaled_data_max.acc[1] = calibrate_unscaled_data_min.acc[1] = (float)imu_unscaled_data.acc[1];
 	calibrate_unscaled_data_max.acc[2] = calibrate_unscaled_data_min.acc[2] = (float)imu_unscaled_data.acc[2];
+
+	int print_delay = 0;
 
 	while(1) {
 		//Low pass filter
@@ -63,12 +64,17 @@ static void accel_calibrate(void)
 		//Search for minimum unscaled value of a axis
 		else if(filtered_unscaled_data.acc[2] < calibrate_unscaled_data_min.acc[2])
 			calibrate_unscaled_data_min.acc[2] = filtered_unscaled_data.acc[2];
-		
-		serial1.printf("\x1b[H\x1b[2J");
-		serial1.printf("x max:%f x min:%f\n\r", calibrate_unscaled_data_max.acc[0], calibrate_unscaled_data_min.acc[0]);
-		serial1.printf("y max:%f y min:%f\n\r", calibrate_unscaled_data_max.acc[1], calibrate_unscaled_data_min.acc[1]);
-		serial1.printf("z max:%f z min:%f", calibrate_unscaled_data_max.acc[2], calibrate_unscaled_data_min.acc[2]);
-		vTaskDelay(10);
+
+		print_delay++;
+
+		if(print_delay == 20000) {
+			serial1.printf("\x1b[H\x1b[2J");
+			serial1.printf("x max:%f x min:%f\n\r", calibrate_unscaled_data_max.acc[0], calibrate_unscaled_data_min.acc[0]);
+			serial1.printf("y max:%f y min:%f\n\r", calibrate_unscaled_data_max.acc[1], calibrate_unscaled_data_min.acc[1]);
+			serial1.printf("z max:%f z min:%f", calibrate_unscaled_data_max.acc[2], calibrate_unscaled_data_min.acc[2]);
+			
+			print_delay = 0;
+		}
 	}
 }
 
@@ -77,6 +83,8 @@ static void mag_calibrate(void)
 	calibrate_unscaled_data_max.mag[0] = calibrate_unscaled_data_min.mag[0] = (float)imu_unscaled_data.mag[0];
 	calibrate_unscaled_data_max.mag[1] = calibrate_unscaled_data_min.mag[1] = (float)imu_unscaled_data.mag[1];
 	calibrate_unscaled_data_max.mag[2] = calibrate_unscaled_data_min.mag[2] = (float)imu_unscaled_data.mag[2];
+
+	int print_delay = 0;
 
 	while(1) {
 		//Low pass filter
@@ -102,12 +110,17 @@ static void mag_calibrate(void)
 		//Search for minimum unscaled value of a axis
 		else if(filtered_unscaled_data.mag[2] < calibrate_unscaled_data_min.mag[2])
 			calibrate_unscaled_data_min.mag[2] = filtered_unscaled_data.mag[2];
-		
-		serial1.printf("\x1b[H\x1b[2J");
-		serial1.printf("x max:%f x min:%f\n\r", calibrate_unscaled_data_max.mag[0], calibrate_unscaled_data_min.mag[0]);
-		serial1.printf("y max:%f y min:%f\n\r", calibrate_unscaled_data_max.mag[1], calibrate_unscaled_data_min.mag[1]);
-		serial1.printf("z max:%f z min:%f", calibrate_unscaled_data_max.mag[2], calibrate_unscaled_data_min.mag[2]);
-		vTaskDelay(10);
+
+		print_delay++;
+
+		if(print_delay == 20000) {
+			serial1.printf("\x1b[H\x1b[2J");
+			serial1.printf("x max:%f x min:%f\n\r", calibrate_unscaled_data_max.mag[0], calibrate_unscaled_data_min.mag[0]);
+			serial1.printf("y max:%f y min:%f\n\r", calibrate_unscaled_data_max.mag[1], calibrate_unscaled_data_min.mag[1]);
+			serial1.printf("z max:%f z min:%f", calibrate_unscaled_data_max.mag[2], calibrate_unscaled_data_min.mag[2]);
+
+			print_delay = 0;
+		}
 	}
 }
 
