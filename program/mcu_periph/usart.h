@@ -7,6 +7,7 @@ typedef struct {
 
 typedef struct {
 	char (*getch)(void);
+	int (*receive)(void);
 	void (*putch)(char buf);
 	void (*putstr)(const char *str);
 	int (*printf)(const char *format, ...);

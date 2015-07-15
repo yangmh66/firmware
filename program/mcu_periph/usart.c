@@ -14,6 +14,8 @@
 
 static char usart1_getch(void);
 static char uart8_getch(void);
+static int usart1_receive(void);
+static int uart8_receive(void);
 static void usart1_putch(char buf);
 static void uart8_putch(char buf);
 static void usart1_putstr(const char *ptr);
@@ -23,6 +25,7 @@ static int uart8_printf(const char *format, ...);
 
 serial_t serial1 = {
 	.getch = usart1_getch,
+	.receive = usart1_receive,
 	.putch = usart1_putch,
 	.putstr = usart1_putstr,
 	.printf = usart1_printf
@@ -30,6 +33,7 @@ serial_t serial1 = {
 
 serial_t serial2 = {
 	.getch = uart8_getch,
+	.receive = uart8_receive,
 	.putch = uart8_putch,
 	.putstr = uart8_putstr,
 	.printf = uart8_printf
@@ -276,6 +280,14 @@ static char usart1_getch(void)
 	return USART_ReceiveData(USART1);
 }
 
+int usart1_receive(void)
+{
+	if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET)
+		return -1;
+
+	return (int)USART_ReceiveData(USART1);
+}
+
 static void usart1_putch(char buf)
 {
 	USART_SendData(USART1, buf);
@@ -481,6 +493,14 @@ static char uart8_getch(void)
 	while(USART_GetFlagStatus(UART8, USART_FLAG_RXNE) == RESET);
 
 	return USART_ReceiveData(UART8);
+}
+
+int uart8_receive(void)
+{
+	if(USART_GetFlagStatus(UART8, USART_FLAG_RXNE) == RESET)
+		return -1;
+
+	return (int)USART_ReceiveData(UART8);
 }
 
 static void uart8_putch(char buf)

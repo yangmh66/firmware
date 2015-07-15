@@ -85,6 +85,7 @@ static void mag_calibrate(void)
 	calibrate_unscaled_data_max.mag[2] = calibrate_unscaled_data_min.mag[2] = (float)imu_unscaled_data.mag[2];
 
 	int print_delay = 0;
+	char buffer;
 
 	while(1) {
 		//Low pass filter
@@ -110,6 +111,15 @@ static void mag_calibrate(void)
 		//Search for minimum unscaled value of a axis
 		else if(filtered_unscaled_data.mag[2] < calibrate_unscaled_data_min.mag[2])
 			calibrate_unscaled_data_min.mag[2] = filtered_unscaled_data.mag[2];
+
+		buffer = serial1.receive();
+		if(buffer == 'q' || buffer == 'Q') {
+			//TODO:Save calibration into the eeprom
+
+			serial1.printf("\n\r");
+
+			return;
+		}
 
 		print_delay++;
 
@@ -162,4 +172,3 @@ void shell_calibrate(char parameter[][MAX_CMD_LEN], int par_cnt)
 		break;
 	}
 }
-
