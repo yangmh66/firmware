@@ -34,7 +34,24 @@ command_list shellCmd_list[SHELL_CMD_CNT] = {
 	CMD_DEF(license, shell),
 };
 
-/**** Shell task **********************************************************************/
+/**
+  * @brief  Asking user a question and get the result in form of y or n
+  * @param  string pointer (prompt or question)
+  * @retval char (Y and Y for yes, n and N for no)
+  */
+char shell_confirm(char *prompt)
+{
+	char confirm_result;
+	while(1) {
+		serial1.printf("%s", prompt);
+		confirm_result = (char)serial1.getch();
+		serial1.printf("%c\n\r", confirm_result);
+
+		if(confirm_result == 'n' || confirm_result == 'N' || confirm_result != 'y' || confirm_result != 'Y')
+			return confirm_result;
+	}
+}
+
 static void shell_linenoise_completion(const char *buf, linenoiseCompletions *lc)
 {
 	int i; //i = 1 to ignore the "UNKNOWN_COMMAND" string

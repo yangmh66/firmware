@@ -7,6 +7,7 @@
 #include "eeprom_task.h"
 
 #include "parser.h"
+#include "shell.h"
 #include "calibrate.h"
 
 enum {ACCEL_CALIBRATE, MAG_CALIBRATE, RC_CALIBRATE};
@@ -118,14 +119,7 @@ static void mag_calibrate(void)
 		buffer = serial1.receive();
 		if(buffer == 'q' || buffer == 'Q') {
 			/* Confirm to save calibration results */
-			uint8_t confirm_result;
-			do {
-				serial1.printf("Are you sure you want to save these calibration results? (y/n):");
-				confirm_result = serial1.getch();
-				serial1.printf("%c\n\r", confirm_result);
-
-				if(confirm_result == 'n' || confirm_result == 'N') break;
-			} while(confirm_result != 'y' && confirm_result != 'Y');
+			char confirm_result = shell_confirm("Are you sure you want to save these calibration results? (y/n):");
 
 			if(confirm_result == 'y' || confirm_result == 'Y') {
 				set_global_data_value(MAG_X_MAX, FLOAT, DATA_CAST(calibrate_unscaled_data_max.mag[0]));
@@ -148,6 +142,7 @@ static void mag_calibrate(void)
 			serial1.printf("[x max]%f\t[x min]%f\n\r", calibrate_unscaled_data_max.mag[0], calibrate_unscaled_data_min.mag[0]);
 			serial1.printf("[y max]%f\t[y min]%f\n\r", calibrate_unscaled_data_max.mag[1], calibrate_unscaled_data_min.mag[1]);
 			serial1.printf("[z max]%f\t[z min]%f\n\r", calibrate_unscaled_data_max.mag[2], calibrate_unscaled_data_min.mag[2]);
+			serial1.printf("Please press \'q\' to save the calibration results\n\r");
 
 			print_delay = 0;
 		}
@@ -172,14 +167,9 @@ void shell_calibrate(char parameter[][MAX_CMD_LEN], int par_cnt)
 		return;
 	}
 
-	uint8_t confirm_result;
-	do {
-		serial1.printf("Are you sure you want do the calibration? (y/n):");
-		confirm_result = serial1.getch();
-		serial1.printf("%c\n\r", confirm_result);
+	char confirm_result = shell_confirm("Are you sure you want do the calibration? (y/n):");
 
-		if(confirm_result == 'n' || confirm_result == 'N') return;
-	} while(confirm_result != 'y' && confirm_result != 'Y');
+	if(confirm_result == 'n' || confirm_result == 'N') return;
 
 	switch(calibrate_mode) {
 	    case ACCEL_CALIBRATE:
