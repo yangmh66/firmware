@@ -43,14 +43,22 @@ static void accel_calibrate(void)
 	calibrate_unscaled_data_max.acc[2] = calibrate_unscaled_data_min.acc[2] = (float)imu_unscaled_data.acc[2];
 
 	int print_delay = 0;
+	int current_index = 0; //0:x, 1:y, 2:z
+	int face_side = 0; //0: Find the max value, 1: find the min value
 
 	char axis[3] = {'x', 'y', 'z'};
 	char buffer, confirm_result;
 
 	int i;
-	for(i = 0; i < 3; i++) {
+	for(i = 0; i < 6; i++) {
+		face_side = i % 2;
+		current_index = i / 2;
 
-		serial1.printf("Turn %c axis of drone to the ground and hold still\n\r", axis[i]);
+		serial1.printf("\x1b[H\x1b[2J");
+		if(face_side == 0)
+			serial1.printf("Make %c axis face to the ground straightly and hold still\n\r", axis[current_index]);
+		else
+			serial1.printf("Reverse to make %c axis face upward and hold still\n\r", axis[current_index]);
 		serial1.printf("Press any key to start the calibration\n\r");
 
 		serial1.getch();
@@ -59,21 +67,34 @@ static void accel_calibrate(void)
 			//Low pass filter
 			imu_calibrate_low_pass_filter(&imu_unscaled_data, &filtered_unscaled_data);
 
-			//Search for maximum unscaled value
-			if(filtered_unscaled_data.acc[i] > calibrate_unscaled_data_max.acc[i])
-				calibrate_unscaled_data_max.acc[i] = filtered_unscaled_data.acc[i];
-			//Search for minimum unscaled value
-			else if(filtered_unscaled_data.acc[i] < calibrate_unscaled_data_min.acc[i])
-				calibrate_unscaled_data_min.acc[i] = filtered_unscaled_data.acc[i];
+			/* Calibration, find out the max value and the min value */
+			if(face_side == 0) {
+				//Search for maximum unscaled value
+				if(filtered_unscaled_data.acc[current_index] > calibrate_unscaled_data_max.acc[current_index])
+					calibrate_unscaled_data_max.acc[current_index] = filtered_unscaled_data.acc[current_index];
+			} else {
+				//Search for minimum unscaled value
+				if(filtered_unscaled_data.acc[current_index] < calibrate_unscaled_data_min.acc[current_index])
+					calibrate_unscaled_data_min.acc[current_index] = filtered_unscaled_data.acc[current_index];
+			}
 
 			/* Interacting with the user */
 			buffer = serial1.receive();
 			if(buffer == 'n' || buffer == 'N') {
-				if(i != 2) {
-					confirm_result = shell_confirm("Finish calibrating and want to go to the next step? (y/n):");
-					
-					if(confirm_result == 'y' || confirm_result == 'Y') break;
-				} else {
+				confirm_result = shell_confirm("Finish and want to go to the next step? (y/n):");
+
+				/* Is this the last step? */
+				if(current_index == 2 && face_side == 1 && (confirm_result == 'y' || confirm_result == 'Y')) {
+					/* Yes, save the data */
+					serial1.printf("\x1b[H\x1b[2J");
+					serial1.printf("Calibration result:\n\r");
+		                        serial1.printf("[x max]%f\t[x min]%f\n\r",
+						calibrate_unscaled_data_max.acc[0], calibrate_unscaled_data_min.acc[0]);
+                        		serial1.printf("[y max]%f\t[y min]%f\n\r",
+						calibrate_unscaled_data_max.acc[1], calibrate_unscaled_data_min.acc[1]);
+		                        serial1.printf("[z max]%f\t[z min]%f\n\r",
+						calibrate_unscaled_data_max.acc[2], calibrate_unscaled_data_min.acc[2]);
+
 					confirm_result = shell_confirm("Do you want to save the calibration result? (y/n):");
 
 					if(confirm_result == 'y' || confirm_result == 'Y') {
@@ -88,20 +109,27 @@ static void accel_calibrate(void)
 					}
 
 					return;
+				} else {
+					/* No, keep going */
+					if(confirm_result == 'y' || confirm_result == 'Y') break;
 				}
+
 			}	
 
 			print_delay++;
 
 			if(print_delay == 20000) {
 				serial1.printf("\x1b[H\x1b[2J");
-				serial1.printf("[%c max]%f\t[%c min:%f]\n\r",
-					axis[i],
-					calibrate_unscaled_data_max.acc[i],
-					axis[i],
-					calibrate_unscaled_data_min.acc[i]
-				);
-				serial1.printf("Please press \'n\' if you are satisfy with these calibration result\n\r");
+				
+				if(face_side == 0) {
+					serial1.printf("[%c max]%f\n\r",
+						axis[current_index], calibrate_unscaled_data_max.acc[current_index]);
+				} else {
+					serial1.printf("[%c min]%f\n\r",
+						axis[current_index], calibrate_unscaled_data_min.acc[current_index]);
+				}
+
+				serial1.printf("Please press \'n\' if you are satisfy with these calibration results\n\r");
 
 				print_delay = 0;
 			}
