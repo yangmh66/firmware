@@ -97,8 +97,8 @@ static void accel_calibrate(void)
 				serial1.printf("\x1b[H\x1b[2J");
 				serial1.printf("[%c max]%f\t[%c min:%f]\n\r",
 					axis[i],
-					axis[i],
 					calibrate_unscaled_data_max.acc[i],
+					axis[i],
 					calibrate_unscaled_data_min.acc[i]
 				);
 				serial1.printf("Please press \'n\' if you are satisfy with these calibration result\n\r");
