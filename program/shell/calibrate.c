@@ -245,6 +245,8 @@ static void rc_calibrate(void)
 
 	int i;
 	for(i = 0; i < 4; i++) {
+		serial1.printf("\x1b[H\x1b[2J");
+
 		switch(i) {
 		    case 0:
 			serial1.printf("\x1b[H\x1b[2J");
@@ -319,7 +321,7 @@ static void rc_calibrate(void)
 			}
 
 			buffer = serial1.receive();
-			if(buffer == 'q' || buffer == 'Q') {
+			if(buffer == 'n' || buffer == 'N') {
 				/* Confirm to save calibration results */
 				char confirm_result = shell_confirm("Are you sure you want to save these calibration results? (y/n):");
 
@@ -347,6 +349,8 @@ static void rc_calibrate(void)
 					serial1.printf("[mode button max]%f\t[mode button neutrul]%f\t[mode button min]%f\n\r",
 						rc_channel6_max, rc_channel6_neutrul, rc_channel6_min);
 				}
+
+				serial1.printf("Please press \'n\' if you are satisfy with these calibration results\n\r");
 
 				print_delay = 0;
 			}
