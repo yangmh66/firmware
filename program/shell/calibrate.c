@@ -63,6 +63,11 @@ static void accel_calibrate(void)
 
 		serial1.getch();
 
+		//Pre-filtering
+		int j;
+		for(j = 0; j < 1000; j++)
+			imu_calibrate_low_pass_filter(&imu_unscaled_data, &filtered_unscaled_data);
+
 		while(1) {
 			//Low pass filter
 			imu_calibrate_low_pass_filter(&imu_unscaled_data, &filtered_unscaled_data);
