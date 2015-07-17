@@ -106,9 +106,11 @@ void shell_help(
 	__attribute__((__unused__))char parameter[][MAX_CMD_LEN],
 	__attribute__((__unused__))int par_cnt)
 {
-	serial1.printf("\n\rSupport commands:\n\r");
-	serial1.printf("clear  \tClear the screen\n\r");
-	serial1.printf("help \tShow the list of all commands\n\r");
+	serial1.printf("Support commands:\n\r");
+	serial1.printf("clear\t\tClear the screen\n\r");
+	serial1.printf("calibrate\tSensor, RC calibration\n\r");
+	serial1.printf("help\t\tShow the list of all commands\n\r");
+	serial1.printf("license\t\tShow the lincese and authors\n\r");
 }
 
 void shell_license(
