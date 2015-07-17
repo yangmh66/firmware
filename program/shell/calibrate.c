@@ -209,6 +209,55 @@ static void mag_calibrate(void)
 	}
 }
 
+static void rc_calibrate(void)
+{
+	float rc_channel1_max, rc_channel1_neutrul, rc_channel1_min;
+	float rc_channel2_max, rc_channel2_neutrul, rc_channel2_min;
+	float rc_channel3_max, rc_channel3_min; //Throttle
+	float rc_channel4_max, rc_channel4_neutrul, rc_channel4_min;
+	float rc_channel5_max, rc_channel5_neutrul, rc_channel5_min; //Safey button
+	float rc_channel6_max, rc_channel6_neutrul, rc_channel6_min; //Auto-pilot mode
+
+	int i;
+	for(i = 0; i < 4; i++) {
+		switch(i) {
+		    case 0:
+			serial1.printf("\x1b[H\x1b[2J");
+			serial1.printf("Step1: Calibrate joystick's neutrul value\n\r");
+			serial1.printf("[Please reset radio controller's postion]\n\r");
+			break;
+		    case 1:
+			serial1.printf("Step2: Calibrate joystick's maximum value and minimum value\n\r");
+			serial1.printf("[Please move the joystick to find out the extreme value]\n\r");
+			break;
+		    case 2:
+			serial1.printf("Step3: Calibrate safety button's maximum value and minimum value\n\r");
+			serial1.printf("[Please switch the button while start calibrating]\n\r");
+			//TODO:Get the value at here.
+			break;
+		    case 3:
+			serial1.printf("Step4: Calibrate mode button's maximum value, neutrul value and minimum value\n\r");
+			serial1.printf("[Pleas switch the button to the change mode while start calibrating]\n\r");
+			//TODO:Get the value at here.
+			break;
+		}
+
+		serial1.printf("Press any key to start the calibration\n\r");
+		serial1.getch();
+
+		while(1) {
+			/* Step1. Detect neutrul value of the joystick*/
+			/* Step2. Detect maximum value and minimum value of the joystick */
+			/* Step3. Detect maximum value and minimum value of the safety button */
+			/* Step4. Detect maximum value, neutrul value and minimum value of the mode button */
+
+			serial1.printf("\x1b[H\x1b[2J");
+
+			break;
+		}
+	}
+}
+
 void shell_calibrate(char parameter[][MAX_CMD_LEN], int par_cnt)
 {
 	int calibrate_mode;
@@ -239,6 +288,7 @@ void shell_calibrate(char parameter[][MAX_CMD_LEN], int par_cnt)
 		mag_calibrate();
 		break;
 	    case RC_CALIBRATE:
+		rc_calibrate();
 		break;
 	}
 }
