@@ -1,7 +1,10 @@
 #include <string.h>
 
 #include "usart.h"
+#include "input_capture.h"
 #include "imu.h"
+
+#include "rc_config.h"
 
 #include "global.h"
 #include "eeprom_task.h"
@@ -209,14 +212,30 @@ static void mag_calibrate(void)
 	}
 }
 
+static void rc_calibrate_low_pass_filter(float new_data, float *filtered_data)
+{
+	float offset_read_alpha = 0.001f;
+
+	*filtered_data = new_data * offset_read_alpha + *filtered_data * (1.0f - offset_read_alpha);
+}
+
 static void rc_calibrate(void)
 {
+	int print_delay = 0;
+
 	float rc_channel1_max, rc_channel1_neutrul, rc_channel1_min;
 	float rc_channel2_max, rc_channel2_neutrul, rc_channel2_min;
 	float rc_channel3_max, rc_channel3_min; //Throttle
 	float rc_channel4_max, rc_channel4_neutrul, rc_channel4_min;
 	float rc_channel5_max, rc_channel5_neutrul, rc_channel5_min; //Safey button
-	float rc_channel6_max, rc_channel6_neutrul, rc_channel6_min; //Auto-pilot mode
+	float rc_channel6_max, rc_channel6_neutrul, rc_channel6_min, rc_channel6_temp; //Auto-pilot mode
+
+	rc_channel1_max = rc_channel1_neutrul = rc_channel1_min = RC_CHANNEL_1_INPUT_CAPTURE;
+	rc_channel2_max= rc_channel2_neutrul= rc_channel2_min = RC_CHANNEL_2_INPUT_CAPTURE;
+	rc_channel3_max= rc_channel3_min = RC_CHANNEL_3_INPUT_CAPTURE;
+	rc_channel4_max= rc_channel4_neutrul= rc_channel4_min = RC_CHANNEL_4_INPUT_CAPTURE;
+	rc_channel5_max= rc_channel5_neutrul= rc_channel5_min = RC_CHANNEL_5_INPUT_CAPTURE;
+	rc_channel6_max= rc_channel6_neutrul= rc_channel6_min = RC_CHANNEL_6_INPUT_CAPTURE;
 
 	int i;
 	for(i = 0; i < 4; i++) {
@@ -233,12 +252,10 @@ static void rc_calibrate(void)
 		    case 2:
 			serial1.printf("Step3: Calibrate safety button's maximum value and minimum value\n\r");
 			serial1.printf("[Please switch the button while start calibrating]\n\r");
-			//TODO:Get the value at here.
 			break;
 		    case 3:
 			serial1.printf("Step4: Calibrate mode button's maximum value, neutrul value and minimum value\n\r");
 			serial1.printf("[Pleas switch the button to the change mode while start calibrating]\n\r");
-			//TODO:Get the value at here.
 			break;
 		}
 
@@ -246,12 +263,62 @@ static void rc_calibrate(void)
 		serial1.getch();
 
 		while(1) {
-			/* Step1. Detect neutrul value of the joystick*/
-			/* Step2. Detect maximum value and minimum value of the joystick */
-			/* Step3. Detect maximum value and minimum value of the safety button */
-			/* Step4. Detect maximum value, neutrul value and minimum value of the mode button */
+			if(i == 0) {
+				/* Step1. Detect neutrul value of the joystick */
+				rc_calibrate_low_pass_filter(RC_CHANNEL_1_INPUT_CAPTURE, &rc_channel1_neutrul);
+				rc_calibrate_low_pass_filter(RC_CHANNEL_2_INPUT_CAPTURE, &rc_channel2_neutrul);
+				rc_calibrate_low_pass_filter(RC_CHANNEL_4_INPUT_CAPTURE, &rc_channel4_neutrul);
+			} else if(i == 1) {
+				/* Step2. Detect maximum value and minimum value of the joystick */
+				if(RC_CHANNEL_1_INPUT_CAPTURE > rc_channel1_max)
+					rc_channel1_max = RC_CHANNEL_1_INPUT_CAPTURE;
+				else if(RC_CHANNEL_1_INPUT_CAPTURE < rc_channel1_min)
+					rc_channel1_min = RC_CHANNEL_1_INPUT_CAPTURE;
 
-			serial1.printf("\x1b[H\x1b[2J");
+				if(RC_CHANNEL_2_INPUT_CAPTURE > rc_channel2_max)
+					rc_channel2_max = RC_CHANNEL_2_INPUT_CAPTURE;
+				else if(RC_CHANNEL_2_INPUT_CAPTURE < rc_channel2_min)
+					rc_channel2_min = RC_CHANNEL_2_INPUT_CAPTURE;
+
+				if(RC_CHANNEL_3_INPUT_CAPTURE > rc_channel3_max)
+					rc_channel3_max = RC_CHANNEL_3_INPUT_CAPTURE;
+				else if(RC_CHANNEL_3_INPUT_CAPTURE < rc_channel3_min)
+					rc_channel3_min = RC_CHANNEL_3_INPUT_CAPTURE;
+
+				if(RC_CHANNEL_4_INPUT_CAPTURE > rc_channel4_max)
+					rc_channel4_max = RC_CHANNEL_4_INPUT_CAPTURE;
+				else if(RC_CHANNEL_4_INPUT_CAPTURE < rc_channel4_min)
+					rc_channel4_min = RC_CHANNEL_4_INPUT_CAPTURE;
+			} else if(i == 2) {
+				/* Step3. Detect maximum value and minimum value of the safety button */
+				if(RC_CHANNEL_5_INPUT_CAPTURE > rc_channel5_max)
+					rc_channel5_max = RC_CHANNEL_5_INPUT_CAPTURE;
+				else if(RC_CHANNEL_5_INPUT_CAPTURE < rc_channel5_min)
+					rc_channel5_min = RC_CHANNEL_5_INPUT_CAPTURE;
+			} else if (i == 3) {
+				/* Step4. Detect maximum value, neutrul value and minimum value of the mode button */
+				if(RC_CHANNEL_6_INPUT_CAPTURE > rc_channel6_max) {
+					rc_channel6_temp = rc_channel6_max;
+					rc_channel6_max = RC_CHANNEL_6_INPUT_CAPTURE;
+				} else if(RC_CHANNEL_6_INPUT_CAPTURE < rc_channel6_min) {
+					rc_channel6_temp = rc_channel6_min;
+					rc_channel6_min = RC_CHANNEL_6_INPUT_CAPTURE;
+				}
+
+				float whole_scale = rc_channel6_max - rc_channel6_min;
+				if((rc_channel6_temp < whole_scale * 0.666) && (rc_channel6_temp > whole_scale * 0.333)) {
+					/* Found the neutrul value! */
+					rc_channel6_neutrul = rc_channel6_temp;
+				}
+			}
+
+			print_delay++;
+
+			if(print_delay == 20000) {
+				serial1.printf("\x1b[H\x1b[2J");
+
+				print_delay = 0;
+			}
 
 			break;
 		}
