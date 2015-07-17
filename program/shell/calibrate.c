@@ -17,10 +17,6 @@ enum {ACCEL_CALIBRATE, MAG_CALIBRATE, RC_CALIBRATE};
 
 extern imu_unscaled_data_t imu_unscaled_data;
 
-imu_data_t filtered_unscaled_data;
-imu_data_t calibrate_unscaled_data_max;
-imu_data_t calibrate_unscaled_data_min;
-
 static void imu_calibrate_low_pass_filter(imu_unscaled_data_t *new_unscaled_data, imu_data_t *filtered_data)
 {
 	float offset_read_alpha = 0.001f;
@@ -41,6 +37,10 @@ static void imu_calibrate_low_pass_filter(imu_unscaled_data_t *new_unscaled_data
 
 static void accel_calibrate(void)
 {
+	imu_data_t filtered_unscaled_data;
+	imu_data_t calibrate_unscaled_data_max;
+	imu_data_t calibrate_unscaled_data_min;
+
 	calibrate_unscaled_data_max.acc[0] = calibrate_unscaled_data_min.acc[0] = (float)imu_unscaled_data.acc[0];
 	calibrate_unscaled_data_max.acc[1] = calibrate_unscaled_data_min.acc[1] = (float)imu_unscaled_data.acc[1];
 	calibrate_unscaled_data_max.acc[2] = calibrate_unscaled_data_min.acc[2] = (float)imu_unscaled_data.acc[2];
@@ -147,6 +147,10 @@ static void accel_calibrate(void)
 
 static void mag_calibrate(void)
 {
+	imu_data_t filtered_unscaled_data;
+	imu_data_t calibrate_unscaled_data_max;
+	imu_data_t calibrate_unscaled_data_min;
+
 	calibrate_unscaled_data_max.mag[0] = calibrate_unscaled_data_min.mag[0] = (float)imu_unscaled_data.mag[0];
 	calibrate_unscaled_data_max.mag[1] = calibrate_unscaled_data_min.mag[1] = (float)imu_unscaled_data.mag[1];
 	calibrate_unscaled_data_max.mag[2] = calibrate_unscaled_data_min.mag[2] = (float)imu_unscaled_data.mag[2];
