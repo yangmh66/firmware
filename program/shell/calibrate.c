@@ -227,6 +227,8 @@ static void rc_calibrate(void)
 {
 	int print_delay = 0;
 
+	char buffer;
+
 	float rc_channel1_max, rc_channel1_neutrul, rc_channel1_min;
 	float rc_channel2_max, rc_channel2_neutrul, rc_channel2_min;
 	float rc_channel3_max, rc_channel3_min; //Throttle
@@ -316,15 +318,38 @@ static void rc_calibrate(void)
 				}
 			}
 
+			buffer = serial1.receive();
+			if(buffer == 'q' || buffer == 'Q') {
+				/* Confirm to save calibration results */
+				char confirm_result = shell_confirm("Are you sure you want to save these calibration results? (y/n):");
+
+				if(confirm_result == 'y' || confirm_result == 'Y') break;
+			}
+
 			print_delay++;
 
 			if(print_delay == 20000) {
 				serial1.printf("\x1b[H\x1b[2J");
 
+				if(i == 0) {
+					serial1.printf("[channel1 neutrul]%f\n\r", rc_channel1_neutrul);
+					serial1.printf("[channel2 neutrul]%f\n\r", rc_channel2_neutrul);
+					serial1.printf("[channel4 neutrul]%f\n\r", rc_channel4_neutrul);
+				} else if(i == 1) {
+					serial1.printf("[channel1 max]%f\t[channel1 min]%f\n\r", rc_channel1_max, rc_channel1_min);
+					serial1.printf("[channel2 max]%f\t[channel2 min]%f\n\r", rc_channel2_max, rc_channel2_min);
+					serial1.printf("[channel3 max]%f\t[channel3 min]%f\n\r", rc_channel3_max, rc_channel3_min);
+					serial1.printf("[channel4 max]%f\t[channel4 min]%f\n\r", rc_channel4_max, rc_channel4_min);
+				} else if(i == 2) {
+					serial1.printf("[safety button max]%f\t[safety button min]%f\n\r",
+						rc_channel5_max, rc_channel5_min);
+				} else if(i == 3) {
+					serial1.printf("[mode button max]%f\t[mode button neutrul]%f\t[mode button min]%f\n\r",
+						rc_channel6_max, rc_channel6_neutrul, rc_channel6_min);
+				}
+
 				print_delay = 0;
 			}
-
-			break;
 		}
 	}
 }
