@@ -304,19 +304,35 @@ static void rc_calibrate(void)
 				else if(RC_CHANNEL_5_INPUT_CAPTURE < rc_channel5_min)
 					rc_channel5_min = RC_CHANNEL_5_INPUT_CAPTURE;
 			} else if (i == 3) {
+				float whole_scale, test_scale;
+
 				/* Step4. Detect maximum value, neutrul value and minimum value of the mode button */
 				if(RC_CHANNEL_6_INPUT_CAPTURE > rc_channel6_max) {
-					rc_channel6_temp = rc_channel6_max;
+					/* Just a tricky math...
+					 * 1 scale = maximum value - minimum value
+					 * 0.5 scale = neutrul value - minimum value
+					 * So, If the condition (2/3 scale > 1/2 scale > 1/3 scale) is satisfied...
+					 * Then we found the neutrul value */
+					whole_scale = RC_CHANNEL_6_INPUT_CAPTURE - rc_channel6_min;
+					test_scale = rc_channel6_max - rc_channel6_min;
+					if((test_scale < whole_scale * 0.666) && (test_scale > whole_scale * 0.333))
+						rc_channel6_neutrul = rc_channel6_max;
+
+					//Find the maximum value!
 					rc_channel6_max = RC_CHANNEL_6_INPUT_CAPTURE;
 				} else if(RC_CHANNEL_6_INPUT_CAPTURE < rc_channel6_min) {
-					rc_channel6_temp = rc_channel6_min;
-					rc_channel6_min = RC_CHANNEL_6_INPUT_CAPTURE;
-				}
+					/* Just a tricky math...
+					 * 1 scale = maximum value - minimum value
+					 * 0.5 scale = neutrul value - minimum value
+					 * So, If the condition (2/3 scale > 1/2 scale > 1/3 scale) is satisfied...
+					 * Then we found the neutrul valu */
+					whole_scale = rc_channel6_max - RC_CHANNEL_6_INPUT_CAPTURE;
+					test_scale = rc_channel6_min - RC_CHANNEL_6_INPUT_CAPTURE;
+					if((test_scale < whole_scale * 0.666) && (test_scale > whole_scale * 0.333))
+						rc_channel6_neutrul = rc_channel6_min;
 
-				float whole_scale = rc_channel6_max - rc_channel6_min;
-				if((rc_channel6_temp < whole_scale * 0.666) && (rc_channel6_temp > whole_scale * 0.333)) {
-					/* Found the neutrul value! */
-					rc_channel6_neutrul = rc_channel6_temp;
+					//Find the minumum value!
+					rc_channel6_min = RC_CHANNEL_6_INPUT_CAPTURE;
 				}
 			}
 
