@@ -97,7 +97,26 @@ global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
 	[MAG_Z_MAX] = {.name = "mag.max-z", .type = FLOAT, .parameter_config = true,
 		.data.float_value = 4096},
 	[MAG_Z_MIN] = {.name = "mag.min-z", .type = FLOAT, .parameter_config = true,
-		.data.float_value = -4096}
+		.data.float_value = -4096},
+
+	/* RC calibration */
+	[CHANNEL1_MAX] = {.name = "rc.ch1.max", .type = FLOAT, .parameter_config = true},
+	[CHANNEL1_NEUTRUL] = {.name = "rc.ch1.neutrul", .type = FLOAT, .parameter_config = true},
+	[CHANNEL1_MIN] = {.name = "rc.ch1.min", .type = FLOAT, .parameter_config = true},
+	[CHANNEL2_MAX] = {.name = "rc.ch2.max", .type = FLOAT, .parameter_config = true},
+	[CHANNEL2_NEUTRUL] = {.name = "rc.ch2.neutrul", .type = FLOAT, .parameter_config = true},
+	[CHANNEL2_MIN] = {.name = "rc.ch2.min", .type = FLOAT, .parameter_config = true},
+	[CHANNEL3_MAX] = {.name = "rc.ch3.max", .type = FLOAT, .parameter_config = true},
+	[CHANNEL3_MIN] = {.name = "rc.ch3.min", .type = FLOAT, .parameter_config = true},
+	[CHANNEL4_MAX] = {.name = "rc.ch4.max", .type = FLOAT, .parameter_config = true},
+	[CHANNEL4_NEUTRUL] = {.name = "rc.ch4.neutrul", .type = FLOAT, .parameter_config = true},
+	[CHANNEL4_MIN] = {.name = "rc.ch4.min", .type = FLOAT, .parameter_config = true},
+	[CHANNEL5_MAX] = {.name = "rc.ch5.max", .type = FLOAT, .parameter_config = true},
+	[CHANNEL5_NEUTRUL] = {.name = "rc.ch5.neutrul", .type = FLOAT, .parameter_config = true},
+	[CHANNEL5_MIN] = {.name = "rc.ch5.min", .type = FLOAT, .parameter_config = true},
+	[CHANNEL6_MAX] = {.name = "rc.ch6.max", .type = FLOAT, .parameter_config = true},
+	[CHANNEL6_NEUTRUL] = {.name = "rc.ch6.neutrul", .type = FLOAT, .parameter_config = true},
+	[CHANNEL6_MIN] = {.name = "rc.ch6.min", .type = FLOAT, .parameter_config = true}
 };
 
 void init_global_data(void)
