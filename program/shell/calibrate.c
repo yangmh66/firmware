@@ -357,7 +357,55 @@ static void rc_calibrate(void)
 				/* Confirm to save calibration results */
 				char confirm_result = shell_confirm("Are you sure you want to save these calibration results? (y/n):");
 
-				if(confirm_result == 'y' || confirm_result == 'Y') break;
+				if(confirm_result == 'y' || confirm_result == 'Y') {
+					if(i == 3) {
+						/* Last step, save calibration results */
+						serial1.printf("\x1b[H\x1b[2J");	
+						serial1.printf("[channel1 max]%f\t[channel1 neutrul]%f\t[channel1 min]%f\n\r",
+							rc_channel1_max, rc_channel1_neutrul, rc_channel1_min);
+						serial1.printf("[channel2 max]%f\t[channel2 neutrul]%f\t[channel2 min]%f\n\r",
+							rc_channel2_max, rc_channel2_neutrul, rc_channel2_min);
+						serial1.printf("[channel3 max]%f\t[channel3 min]%f\n\r",
+							rc_channel3_max, rc_channel3_min);
+						serial1.printf("[channel4 max]%f\t[channel4 neutrul]%f\t[channel4 min]%f\n\r",
+							rc_channel4_max, rc_channel4_neutrul, rc_channel4_min);
+						serial1.printf("[channel5 max]%f\t[channel5 neutrul]%f\t[channel5 min]%f\n\r",
+							rc_channel5_max, rc_channel5_neutrul, rc_channel5_min);
+						serial1.printf("[channel6 max]%f\t[channel neutrul6]%f\t[channel min6]%f\n\r",
+							rc_channel6_max, rc_channel6_neutrul, rc_channel6_min);
+
+						char confirm_result = 
+							shell_confirm("Do you want to save the calibration result? (y/n):");
+
+						if(confirm_result == 'n' || confirm_result == 'N') return;
+
+						/* Save into global data list! */
+						set_global_data_value(CHANNEL1_MAX, FLOAT, DATA_CAST(rc_channel1_max));
+						set_global_data_value(CHANNEL1_NEUTRUL, FLOAT, DATA_CAST(rc_channel1_neutrul));
+						set_global_data_value(CHANNEL1_MIN, FLOAT, DATA_CAST(rc_channel1_min));
+						set_global_data_value(CHANNEL2_MAX, FLOAT, DATA_CAST(rc_channel2_max));
+						set_global_data_value(CHANNEL2_NEUTRUL, FLOAT, DATA_CAST(rc_channel2_neutrul));
+						set_global_data_value(CHANNEL2_MIN, FLOAT, DATA_CAST(rc_channel2_min));
+						set_global_data_value(CHANNEL3_MAX, FLOAT, DATA_CAST(rc_channel3_max));
+						set_global_data_value(CHANNEL3_MIN, FLOAT, DATA_CAST(rc_channel3_min));
+						set_global_data_value(CHANNEL4_MAX, FLOAT, DATA_CAST(rc_channel4_max));
+						set_global_data_value(CHANNEL4_NEUTRUL, FLOAT, DATA_CAST(rc_channel4_neutrul));
+						set_global_data_value(CHANNEL4_MIN, FLOAT, DATA_CAST(rc_channel4_min));
+						set_global_data_value(CHANNEL5_MAX, FLOAT, DATA_CAST(rc_channel5_max));
+						set_global_data_value(CHANNEL5_NEUTRUL, FLOAT, DATA_CAST(rc_channel5_neutrul));
+						set_global_data_value(CHANNEL5_MIN, FLOAT, DATA_CAST(rc_channel5_min));
+						set_global_data_value(CHANNEL6_MAX, FLOAT, DATA_CAST(rc_channel6_max));
+						set_global_data_value(CHANNEL6_NEUTRUL, FLOAT, DATA_CAST(rc_channel6_neutrul));
+						set_global_data_value(CHANNEL6_MIN, FLOAT, DATA_CAST(rc_channel6_min));
+
+						/* Also save into the eeprom! */
+						eeprom_task_execute();
+
+						return;
+					} else {
+						break;
+					}
+				}
 			}
 
 			print_delay++;
