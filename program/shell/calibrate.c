@@ -236,6 +236,22 @@ static void rc_calibrate(void)
 	float rc_channel5_max, rc_channel5_neutrul, rc_channel5_min; //Safey button
 	float rc_channel6_max, rc_channel6_neutrul, rc_channel6_min, rc_channel6_temp; //Auto-pilot mode
 
+	int signal_check = 0;
+	
+	/* No signal */
+	if(RC_CHANNEL_1_INPUT_CAPTURE == 0) serial1.printf("RC Channel1 no signal\n\r"), signal_check = 1;
+	if(RC_CHANNEL_2_INPUT_CAPTURE == 0) serial1.printf("RC Channel2 no signal\n\r"), signal_check = 1;
+	if(RC_CHANNEL_3_INPUT_CAPTURE == 0) serial1.printf("RC Channel3 no signal\n\r"), signal_check = 1;
+	if(RC_CHANNEL_4_INPUT_CAPTURE == 0) serial1.printf("RC Channel4 no signal\n\r"), signal_check = 1;
+	if(RC_CHANNEL_5_INPUT_CAPTURE == 0) serial1.printf("RC Channel5 no signal\n\r"), signal_check = 1;
+	if(RC_CHANNEL_6_INPUT_CAPTURE == 0) serial1.printf("RC Channel6 no signal\n\r"), signal_check = 1;
+
+	if(signal_check == 1) {
+		serial1.printf("Please check your radio controller and receiver\n\r");
+		serial1.printf("[RC calibration is failed]\n\r");
+		return; //Error, no signal, end of the calibration
+	}
+
 	rc_channel1_max = rc_channel1_neutrul = rc_channel1_min = RC_CHANNEL_1_INPUT_CAPTURE;
 	rc_channel2_max= rc_channel2_neutrul= rc_channel2_min = RC_CHANNEL_2_INPUT_CAPTURE;
 	rc_channel3_max= rc_channel3_min = RC_CHANNEL_3_INPUT_CAPTURE;
