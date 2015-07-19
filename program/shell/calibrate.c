@@ -248,7 +248,7 @@ static void rc_calibrate(void)
 	float rc_channel3_max, rc_channel3_min; //Throttle
 	float rc_channel4_max, rc_channel4_neutrul, rc_channel4_min;
 	float rc_channel5_max, rc_channel5_neutrul, rc_channel5_min; //Safey button
-	float rc_channel6_max, rc_channel6_neutrul, rc_channel6_min, rc_channel6_temp; //Auto-pilot mode
+	float rc_channel6_max, rc_channel6_neutrul, rc_channel6_min; //Auto-pilot mode
 
 	int signal_check = 0;
 	
@@ -388,7 +388,7 @@ static void rc_calibrate(void)
 						serial1.printf("[channel6 max]%f\t[channel neutrul6]%f\t[channel min6]%f\n\r",
 							(double)rc_channel6_max, (double)rc_channel6_neutrul, (double)rc_channel6_min);
 
-						char confirm_result = 
+						confirm_result = 
 							shell_confirm("Do you want to save the calibration result? (y/n):");
 
 						if(confirm_result == 'n' || confirm_result == 'N') return;
