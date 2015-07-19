@@ -97,11 +97,11 @@ static void accel_calibrate(void)
 					serial1.printf("\x1b[H\x1b[2J");
 					serial1.printf("Calibration result:\n\r");
 		                        serial1.printf("[x max]%f\t[x min]%f\n\r",
-						calibrate_unscaled_data_max.acc[0], calibrate_unscaled_data_min.acc[0]);
+						(double)calibrate_unscaled_data_max.acc[0], (double)calibrate_unscaled_data_min.acc[0]);
                         		serial1.printf("[y max]%f\t[y min]%f\n\r",
-						calibrate_unscaled_data_max.acc[1], calibrate_unscaled_data_min.acc[1]);
+						(double)calibrate_unscaled_data_max.acc[1], (double)calibrate_unscaled_data_min.acc[1]);
 		                        serial1.printf("[z max]%f\t[z min]%f\n\r",
-						calibrate_unscaled_data_max.acc[2], calibrate_unscaled_data_min.acc[2]);
+						(double)calibrate_unscaled_data_max.acc[2], (double)calibrate_unscaled_data_min.acc[2]);
 
 					confirm_result = shell_confirm("Do you want to save the calibration result? (y/n):");
 
@@ -135,10 +135,10 @@ static void accel_calibrate(void)
 				
 				if(face_side == 0) {
 					serial1.printf("[%c max]%f\n\r",
-						axis[current_index], calibrate_unscaled_data_max.acc[current_index]);
+						axis[current_index], (double)calibrate_unscaled_data_max.acc[current_index]);
 				} else {
 					serial1.printf("[%c min]%f\n\r",
-						axis[current_index], calibrate_unscaled_data_min.acc[current_index]);
+						axis[current_index], (double)calibrate_unscaled_data_min.acc[current_index]);
 				}
 
 				serial1.printf("Please press \'n\' if you are satisfy with these calibration results\n\r");
@@ -216,9 +216,12 @@ static void mag_calibrate(void)
 
 		if(print_delay == 20000) {
 			serial1.printf("\x1b[H\x1b[2J");
-			serial1.printf("[x max]%f\t[x min]%f\n\r", calibrate_unscaled_data_max.mag[0], calibrate_unscaled_data_min.mag[0]);
-			serial1.printf("[y max]%f\t[y min]%f\n\r", calibrate_unscaled_data_max.mag[1], calibrate_unscaled_data_min.mag[1]);
-			serial1.printf("[z max]%f\t[z min]%f\n\r", calibrate_unscaled_data_max.mag[2], calibrate_unscaled_data_min.mag[2]);
+			serial1.printf("[x max]%f\t[x min]%f\n\r", (double)calibrate_unscaled_data_max.mag[0],
+				(double)calibrate_unscaled_data_min.mag[0]);
+			serial1.printf("[y max]%f\t[y min]%f\n\r", (double)calibrate_unscaled_data_max.mag[1],
+				(double)calibrate_unscaled_data_min.mag[1]);
+			serial1.printf("[z max]%f\t[z min]%f\n\r", (double)calibrate_unscaled_data_max.mag[2],
+				(double)calibrate_unscaled_data_min.mag[2]);
 			serial1.printf("Please press \'n\' to save the calibration results\n\r");
 			serial1.printf("Press \'q\' if you want to leave the calibration\n\r");
 
@@ -342,7 +345,7 @@ static void rc_calibrate(void)
 					 * Then we found the neutrul value */
 					whole_scale = RC_CHANNEL_6_INPUT_CAPTURE - rc_channel6_min;
 					test_scale = rc_channel6_max - rc_channel6_min;
-					if((test_scale < whole_scale * 0.666) && (test_scale > whole_scale * 0.333))
+					if((test_scale < whole_scale * 0.666f) && (test_scale > whole_scale * 0.333f))
 						rc_channel6_neutrul = rc_channel6_max;
 
 					//Find the maximum value!
@@ -355,7 +358,7 @@ static void rc_calibrate(void)
 					 * Then we found the neutrul valu */
 					whole_scale = rc_channel6_max - RC_CHANNEL_6_INPUT_CAPTURE;
 					test_scale = rc_channel6_min - RC_CHANNEL_6_INPUT_CAPTURE;
-					if((test_scale < whole_scale * 0.666) && (test_scale > whole_scale * 0.333))
+					if((test_scale < whole_scale * 0.666f) && (test_scale > whole_scale * 0.333f))
 						rc_channel6_neutrul = rc_channel6_min;
 
 					//Find the minumum value!
@@ -373,17 +376,17 @@ static void rc_calibrate(void)
 						/* Last step, save calibration results */
 						serial1.printf("\x1b[H\x1b[2J");	
 						serial1.printf("[channel1 max]%f\t[channel1 neutrul]%f\t[channel1 min]%f\n\r",
-							rc_channel1_max, rc_channel1_neutrul, rc_channel1_min);
+							(double)rc_channel1_max, (double)rc_channel1_neutrul, (double)rc_channel1_min);
 						serial1.printf("[channel2 max]%f\t[channel2 neutrul]%f\t[channel2 min]%f\n\r",
-							rc_channel2_max, rc_channel2_neutrul, rc_channel2_min);
+							(double)rc_channel2_max, (double)rc_channel2_neutrul, (double)rc_channel2_min);
 						serial1.printf("[channel3 max]%f\t[channel3 min]%f\n\r",
-							rc_channel3_max, rc_channel3_min);
+							(double)rc_channel3_max, (double)rc_channel3_min);
 						serial1.printf("[channel4 max]%f\t[channel4 neutrul]%f\t[channel4 min]%f\n\r",
-							rc_channel4_max, rc_channel4_neutrul, rc_channel4_min);
+							(double)rc_channel4_max, (double)rc_channel4_neutrul, (double)rc_channel4_min);
 						serial1.printf("[channel5 max]%f\t[channel5 neutrul]%f\t[channel5 min]%f\n\r",
-							rc_channel5_max, rc_channel5_neutrul, rc_channel5_min);
+							(double)rc_channel5_max, (double)rc_channel5_neutrul, (double)rc_channel5_min);
 						serial1.printf("[channel6 max]%f\t[channel neutrul6]%f\t[channel min6]%f\n\r",
-							rc_channel6_max, rc_channel6_neutrul, rc_channel6_min);
+							(double)rc_channel6_max, (double)rc_channel6_neutrul, (double)rc_channel6_min);
 
 						char confirm_result = 
 							shell_confirm("Do you want to save the calibration result? (y/n):");
@@ -429,20 +432,24 @@ static void rc_calibrate(void)
 				serial1.printf("\x1b[H\x1b[2J");
 
 				if(i == 0) {
-					serial1.printf("[channel1 neutrul]%f\n\r", rc_channel1_neutrul);
-					serial1.printf("[channel2 neutrul]%f\n\r", rc_channel2_neutrul);
-					serial1.printf("[channel4 neutrul]%f\n\r", rc_channel4_neutrul);
+					serial1.printf("[channel1 neutrul]%f\n\r", (double)rc_channel1_neutrul);
+					serial1.printf("[channel2 neutrul]%f\n\r", (double)rc_channel2_neutrul);
+					serial1.printf("[channel4 neutrul]%f\n\r", (double)rc_channel4_neutrul);
 				} else if(i == 1) {
-					serial1.printf("[channel1 max]%f\t[channel1 min]%f\n\r", rc_channel1_max, rc_channel1_min);
-					serial1.printf("[channel2 max]%f\t[channel2 min]%f\n\r", rc_channel2_max, rc_channel2_min);
-					serial1.printf("[channel3 max]%f\t[channel3 min]%f\n\r", rc_channel3_max, rc_channel3_min);
-					serial1.printf("[channel4 max]%f\t[channel4 min]%f\n\r", rc_channel4_max, rc_channel4_min);
+					serial1.printf("[channel1 max]%f\t[channel1 min]%f\n\r",
+						(double)rc_channel1_max, (double)rc_channel1_min);
+					serial1.printf("[channel2 max]%f\t[channel2 min]%f\n\r",
+						(double)rc_channel2_max, (double)rc_channel2_min);
+					serial1.printf("[channel3 max]%f\t[channel3 min]%f\n\r",
+						(double)rc_channel3_max, (double)rc_channel3_min);
+					serial1.printf("[channel4 max]%f\t[channel4 min]%f\n\r",
+						(double)rc_channel4_max, (double)rc_channel4_min);
 				} else if(i == 2) {
 					serial1.printf("[safety button max]%f\t[safety button min]%f\n\r",
-						rc_channel5_max, rc_channel5_min);
+						(double)rc_channel5_max, (double)rc_channel5_min);
 				} else if(i == 3) {
 					serial1.printf("[mode button max]%f\t[mode button neutrul]%f\t[mode button min]%f\n\r",
-						rc_channel6_max, rc_channel6_neutrul, rc_channel6_min);
+						(double)rc_channel6_max, (double)rc_channel6_neutrul, (double)rc_channel6_min);
 				}
 
 				serial1.printf("Please press \'n\' if you are satisfy with these calibration results\n\r");
