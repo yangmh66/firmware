@@ -184,7 +184,7 @@ static void mag_calibrate(void)
 			calibrate_unscaled_data_min.mag[2] = filtered_unscaled_data.mag[2];
 
 		buffer = serial1.receive();
-		if(buffer == 'q' || buffer == 'Q') {
+		if(buffer == 'n' || buffer == 'N') {
 			/* Confirm to save calibration results */
 			char confirm_result = shell_confirm("Are you sure you want to save these calibration results? (y/n):");
 
@@ -209,7 +209,7 @@ static void mag_calibrate(void)
 			serial1.printf("[x max]%f\t[x min]%f\n\r", calibrate_unscaled_data_max.mag[0], calibrate_unscaled_data_min.mag[0]);
 			serial1.printf("[y max]%f\t[y min]%f\n\r", calibrate_unscaled_data_max.mag[1], calibrate_unscaled_data_min.mag[1]);
 			serial1.printf("[z max]%f\t[z min]%f\n\r", calibrate_unscaled_data_max.mag[2], calibrate_unscaled_data_min.mag[2]);
-			serial1.printf("Please press \'q\' to save the calibration results\n\r");
+			serial1.printf("Please press \'n\' to save the calibration results\n\r");
 
 			print_delay = 0;
 		}
