@@ -10,7 +10,7 @@ typedef struct linenoiseCompletions {
 
 typedef void(linenoiseCompletionCallback)(const char *, linenoiseCompletions *);
 void linenoiseSetCompletionCallback(linenoiseCompletionCallback *);
-void linenoiseAddCompletion(linenoiseCompletions *, char *);
+void linenoiseAddCompletion(linenoiseCompletions *lc, char **completion_list, char *str);
 
 void linenoise(const char *prompt, char *result_str);
 int linenoiseHistoryAdd(const char *line);
