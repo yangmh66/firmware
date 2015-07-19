@@ -417,7 +417,7 @@ int save_global_data_into_eeprom(int index)
 				printf("%d ", buffer_verify[i]);
 			}
 
-			printf("-> value : %f (%d)\n\r", data_eeprom.float_value, checksum_verify);
+			printf("-> value : %f (%d)\n\r", (double)data_eeprom.float_value, checksum_verify);
 		}
 
 		/* Set up the first byte of eeprom (data = global data count) */
