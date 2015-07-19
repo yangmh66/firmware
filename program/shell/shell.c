@@ -39,7 +39,7 @@ static void shell_linenoise_completion(const char *buf, linenoiseCompletions *lc
 	int i; //i = 1 to ignore the "UNKNOWN_COMMAND" string
 
 	for (i = 1; i < SHELL_CMD_CNT; i++) {
-		int j;
+		unsigned int j;
 		for(j = 0; j < strlen(buf); j++) {
 			if(buf[j] != shellCmd_list[i].str[j]) break;
 
