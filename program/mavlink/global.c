@@ -437,7 +437,7 @@ int save_global_data_into_eeprom(int index)
 				serial2.printf("%d ", buffer_verify[i]);
 			}
 
-			serial2.printf("-> value : %f (%d)\n\r", data_eeprom.float_value, checksum_verify);
+			serial2.printf("-> value : %f (%d)\n\r", (double)data_eeprom.float_value, checksum_verify);
 		}
 
 		/* Set up the first byte of eeprom (data = global data count) */
