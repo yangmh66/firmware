@@ -180,13 +180,10 @@ void linenoiseSetCompletionCallback(linenoiseCompletionCallback *fn)
 	completionCallback = fn;
 }
 
-void linenoiseAddCompletion(linenoiseCompletions *lc, char *str)
+void linenoiseAddCompletion(linenoiseCompletions *lc, char **completion_list, char *str)
 {
-	size_t len = strlen(str);
-	char *copy = (char *)malloc(len + 1);
-	memcpy(copy, str, len + 1);
-	lc->cvec = (char **)realloc(lc->cvec, sizeof(char *) * (lc->len + 1));
-	lc->cvec[lc->len++] = copy;
+	lc->cvec = completion_list;
+	lc->cvec[lc->len++] = str;
 }
 
 static void refreshSingleLine(struct linenoiseState *l)

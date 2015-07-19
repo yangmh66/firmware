@@ -31,6 +31,8 @@ command_list shellCmd_list[SHELL_CMD_CNT] = {
 	CMD_DEF(license, shell),
 };
 
+char *completion_list[SHELL_CMD_CNT];
+
 /**** Shell task **********************************************************************/
 static void shell_linenoise_completion(const char *buf, linenoiseCompletions *lc)
 {
@@ -38,7 +40,7 @@ static void shell_linenoise_completion(const char *buf, linenoiseCompletions *lc
 
 	for (i = 1; i < SHELL_CMD_CNT; i++) {
 		if (buf[0] == shellCmd_list[i].str[0])
-			linenoiseAddCompletion(lc, shellCmd_list[i].str);
+			linenoiseAddCompletion(lc, completion_list, shellCmd_list[i].str);
 	}
 }
 
