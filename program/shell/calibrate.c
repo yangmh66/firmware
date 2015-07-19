@@ -122,7 +122,11 @@ static void accel_calibrate(void)
 					if(confirm_result == 'y' || confirm_result == 'Y') break;
 				}
 
-			}	
+			} else if(buffer == 'q' || buffer == 'Q') {
+				confirm_result = shell_confirm("Stop calibrating without saving? (y/n):");
+
+				if(confirm_result == 'y' || confirm_result == 'Y') return;
+			}
 
 			print_delay++;
 
@@ -138,6 +142,7 @@ static void accel_calibrate(void)
 				}
 
 				serial1.printf("Please press \'n\' if you are satisfy with these calibration results\n\r");
+				serial1.printf("Press \'q\' if you want to leave the calibration\n\r");
 
 				print_delay = 0;
 			}
@@ -200,7 +205,12 @@ static void mag_calibrate(void)
 
 				return;
 			}
+		} else if(buffer == 'q' || buffer == 'Q') {
+			char confirm_result = shell_confirm("Stop calibrating without saving? (y/n):");
+
+			if(confirm_result == 'y' || confirm_result == 'Y') return;
 		}
+
 
 		print_delay++;
 
@@ -210,6 +220,7 @@ static void mag_calibrate(void)
 			serial1.printf("[y max]%f\t[y min]%f\n\r", calibrate_unscaled_data_max.mag[1], calibrate_unscaled_data_min.mag[1]);
 			serial1.printf("[z max]%f\t[z min]%f\n\r", calibrate_unscaled_data_max.mag[2], calibrate_unscaled_data_min.mag[2]);
 			serial1.printf("Please press \'n\' to save the calibration results\n\r");
+			serial1.printf("Press \'q\' if you want to leave the calibration\n\r");
 
 			print_delay = 0;
 		}
@@ -406,6 +417,10 @@ static void rc_calibrate(void)
 						break;
 					}
 				}
+			} else if(buffer == 'q' || buffer == 'Q') {
+				char confirm_result = shell_confirm("Stop calibrating without saving? (y/n):");
+
+				if(confirm_result == 'y' || confirm_result == 'Y') return;
 			}
 
 			print_delay++;
@@ -431,7 +446,8 @@ static void rc_calibrate(void)
 				}
 
 				serial1.printf("Please press \'n\' if you are satisfy with these calibration results\n\r");
-
+				serial1.printf("Press \'q\' if you want to leave the calibration\n\r");
+	
 				print_delay = 0;
 			}
 		}
