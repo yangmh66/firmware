@@ -22,6 +22,7 @@ enum {
 	GPS_VX,
 	GPS_VY,
 	GPS_VZ,
+	GPS_SATELLITE_CNT,
 	/* PID Controller */
 	ROLL_KP,
 	ROLL_KI,

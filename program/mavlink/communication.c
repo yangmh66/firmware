@@ -54,6 +54,7 @@ static void send_gps_info(void)
 {
 	int32_t latitude, longitude, altitude;
 	int16_t gps_vx, gps_vy, gps_vz;
+	uint8_t satellite_count, gps_fix_type;
 
 	/* Prepare the GPS data */
 	read_global_data_value(GPS_LAT, DATA_POINTER_CAST(&latitude));
@@ -62,6 +63,7 @@ static void send_gps_info(void)
 	read_global_data_value(GPS_VX, DATA_POINTER_CAST(&gps_vx));
 	read_global_data_value(GPS_VY, DATA_POINTER_CAST(&gps_vy));
 	read_global_data_value(GPS_VZ, DATA_POINTER_CAST(&gps_vz));
+	read_global_data_value(GPS_SATELLITE_CNT, DATA_POINTER_CAST(&satellite_count));
 
 	mavlink_message_t msg;
 
@@ -75,6 +77,25 @@ static void send_gps_info(void)
 		gps_vy * 100,   //Speed-Vy
 		gps_vz * 100,   //Speed-Vz
 		45
+	);
+
+	send_package(&msg);
+
+	if(satellite_count < 3) gps_fix_type = 1;
+	else if(satellite_count < 4) gps_fix_type = 2;
+	else gps_fix_type = 3;
+
+	mavlink_msg_gps_raw_int_pack(1, 200, &msg,
+		get_system_time_ms(),
+		gps_fix_type,
+		latitude,  //Latitude
+		longitude,  //Longitude
+		altitude, //Altitude
+		UINT16_MAX,
+		UINT16_MAX,
+		UINT16_MAX,
+		UINT16_MAX,
+		satellite_count
 	);
 
 	send_package(&msg);

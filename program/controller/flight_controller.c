@@ -135,6 +135,7 @@ void flight_control_task(void)
 			set_global_data_value(GPS_ALT, INT32, DATA_CAST( (int32_t) (vertical_filtered_data.Z*10.0f) )  );
 			set_global_data_value(GPS_LAT, INT32, DATA_CAST(GPS_position_LLH.lat));
 			set_global_data_value(GPS_LON, INT32, DATA_CAST(GPS_position_LLH.lon));
+			set_global_data_value(GPS_SATELLITE_CNT, UINT8, DATA_CAST(GPS_solution_info.numSV));
 			update_system_time();
 
 			LED_ON(LED4);
