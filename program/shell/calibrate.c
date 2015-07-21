@@ -151,8 +151,8 @@ static void accel_calibrate(void)
 				}
 
 				serial1.printf("Please press \'n\' if you are satisfy with these calibration results\n\r");
-				serial1.printf("Please Press \'r\'\ if you want to reset current value\n\r");
-				serial1.printf("Please Press \'q\' if you want to leave the calibration\n\r");
+				serial1.printf("Please press \'r\' if you want to reset current value\n\r");
+				serial1.printf("Please press \'q\' if you want to leave the calibration\n\r");
 
 				print_delay = 0;
 			}
@@ -233,7 +233,7 @@ static void mag_calibrate(void)
 			serial1.printf("[z max]%f\t[z min]%f\n\r", (double)calibrate_unscaled_data_max.mag[2],
 				(double)calibrate_unscaled_data_min.mag[2]);
 			serial1.printf("Please press \'n\' to save the calibration results\n\r");
-			serial1.printf("Please Press \'q\' if you want to leave the calibration\n\r");
+			serial1.printf("Please press \'q\' if you want to leave the calibration\n\r");
 
 			print_delay = 0;
 		}
