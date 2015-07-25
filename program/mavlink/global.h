@@ -103,6 +103,8 @@ typedef struct {
 	/* QGroundControl parameter config */
 	bool parameter_config;
 
+	bool updated_flag;
+
 	uint16_t eeprom_address;
 } global_data_t ;
 
@@ -122,5 +124,8 @@ void load_global_data_from_eeprom(void);
 void set_eeprom_pending_flag(void);
 void clear_eeprom_pending_flag(void);
 bool is_eeprom_pending_to_save(void);
+void set_global_data_update_flag(int index);
+void reset_global_data_update_flag(int index);
+bool check_global_data_update_flag(int index);
 
 #endif

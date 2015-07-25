@@ -95,13 +95,14 @@ void mpu9250_calibrate_gyro_offset(imu_calibrated_offset_t *imu_offset, uint16_t
 
 void mpu9250_apply_accel_calibration(imu_calibrated_offset_t *imu_offset){
 
+
 	/* Example of data for current board
 
 	Raw_Axis |  min   | max  |  average(offset) | 1g_scale	|>
 
-	    0	   -4096	4088	-4					4092 //4094 (fine calibrated)
-	    1	   -4080	4102    11 					4091 //4095 (fine calibrated)
-	    2	   -4364  	3870	-247				4117 //4xxx (fine calibrated)
+	    0	   -4056	4120	32					4088 
+	    1	   -4076	4103    14 					4090
+	    2	   -4307  	3933	-187				4120
 	
 	But actual raw_data for 1g in 8g_full_scale setting should be 4096
 	So that the modify factor for acc_scale will be 4096/(measured1g_scale) (i.e. scale it to 4096)
