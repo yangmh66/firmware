@@ -3,7 +3,15 @@
 #include "mission.h"
 // NED -> XYZ so, N~x, E~y
 // lat=N/S -> x, lon=E/W -> y
-#define WAYPOINT_DEBUG printf
+
+#define USE_WAYPOINT_DEBUG_PRINT 0
+
+#if USE_WAYPOINT_DEBUG_PRINT == 1
+	#define WAYPOINT_DEBUG printf
+#else
+	#define WAYPOINT_DEBUG(...) 
+#endif
+
 extern waypoint_info_t waypoint_info;
 
 bool nav_waypoint_list_is_updated = true;

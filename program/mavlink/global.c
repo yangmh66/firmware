@@ -11,6 +11,14 @@
 
 #define QUADCOPTER 0
 
+#define USE_EEPROM_DEBUG_PRINT 1
+
+#if USE_EEPROM_DEBUG_PRINT == 1
+	#define EEPROM_DEBUG_PRINT printf
+#else
+	#define EEPROM_DEBUG_PRINT(...)
+#endif
+
 void eeprom_debug_print(void);
 
 bool eeprom_is_written;
@@ -407,20 +415,20 @@ int save_global_data_into_eeprom(int index)
 
 		if(checksum_verify != checksum) {
 			data_is_correct = false;
-			printf("<Checksum ERROR>\n\r");
+			EEPROM_DEBUG_PRINT("<Checksum ERROR>\n\r");
 		}
 
 		if(data_is_correct == false)
-			printf("[address : %d]Data check is failed\n\r", eeprom_address); //TODO:Data is not correct, handle this situation!
+			EEPROM_DEBUG_PRINT("[address : %d]Data check is failed\n\r", eeprom_address); //TODO:Data is not correct, handle this situation!
 		else {
-			printf("[address : %d] write : ", eeprom_address);
+			EEPROM_DEBUG_PRINT("[address : %d] write : ", eeprom_address);
 
 			int i;
 			for(i = 0; i < 4; i++) {
-				printf("%d ", buffer_verify[i]);
+				EEPROM_DEBUG_PRINT("%d ", buffer_verify[i]);
 			}
 
-			printf("-> value : %f (%d)\n\r", (double)data_eeprom.float_value, checksum_verify);
+			EEPROM_DEBUG_PRINT("-> value : %f (%d)\n\r", (double)data_eeprom.float_value, checksum_verify);
 		}
 
 		/* Set up the first byte of eeprom (data = global data count) */
@@ -495,7 +503,7 @@ void load_global_data_from_eeprom(void)
 				if(checksum_test(eeprom_data, type_size, checksum) == 0) {
 					set_global_data_value(i, type, DATA_CAST(data));
 				} else {
-					printf("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
+					EEPROM_DEBUG_PRINT("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
 				}
 			}
 
@@ -540,21 +548,21 @@ void eeprom_debug_print(void)
 			memcpy(&data, eeprom_data, sizeof(float));
 			memcpy(&checksum, eeprom_data + sizeof(float), 1);
 			
-			printf("[address : %d] ", eeprom_address);
+			EEPROM_DEBUG_PRINT("[address : %d] ", eeprom_address);
 
 			for(j = 0; j < 5; j++) {
 				if(j != 4) 
-					printf("%d ", eeprom_data[j]);
+					EEPROM_DEBUG_PRINT("%d ", eeprom_data[j]);
 				else
-					printf("(%d) ", eeprom_data[j]);
+					EEPROM_DEBUG_PRINT("(%d) ", eeprom_data[j]);
 			}
 
-			printf("\n\r");
-			//printf("-> value : %f (%d)\n\r", data.float_value, eeprom_data[4]);
+			EEPROM_DEBUG_PRINT("\n\r");
+			//EEPROM_DEBUG_PRINT("-> value : %f (%d)\n\r", data.float_value, eeprom_data[4]);
 		}
 	}
 
-	printf("\n\r");
+	EEPROM_DEBUG_PRINT("\n\r");
 }
 
 /**
