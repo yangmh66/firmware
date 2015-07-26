@@ -4,16 +4,16 @@
 #include "AT24C04C.h"
 #include "delay.h"
 
-/* EEPROM I2C Timeout exception */
+/* I2C Timeout exception */
 typedef enum {I2C_SUCCESS, I2C_TIMEOUT} I2C_Status;
 int i2c_timeout;
 I2C_Status eeprom_i2c_status;
 #define I2C_TIMED(x) i2c_timeout = 0xFFFF; eeprom_i2c_status = I2C_SUCCESS; \
-while(x) { if(i2c_timeout-- == 0) { eeprom_i2c_status = I2C_TIMEOUT; goto i2c_restart;} }
+while(x) { if(i2c_timeout-- == 0) { eeprom_i2c_status = I2C_TIMEOUT; } }
 
-/* Normal Timeout exception */
+/* EEPROM Timeout exception */
 int timeout;
-#define TIMED(x) timeout = 0xFFFF; while(x) { if(timeout-- == 0) break;}
+#define TIMED(x, restart) timeout = 0xFFFF; while(x) { if(timeout-- == 0) break; restart;}
 
 /* EEPROM Information */
 #define EEPROM_DEVICE_BASE_ADDRESS 0xA8
@@ -31,6 +31,13 @@ eeprom_t eeprom = {
 	.write = eeprom_write,
 	.clear = eeprom_clear
 };
+
+static void eeprom_i2c_restart(void)
+{
+	printf("[I2C reinitialize]\n\r");
+	I2C_DeInit(I2C1);
+	i2c1_reinit();
+}
 
 static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word_address, 
 	int data_count)
@@ -77,13 +84,6 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
 	/* Restart the I2C */
 	I2C_AcknowledgeConfig(I2C1, DISABLE);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
-
-	return eeprom_i2c_status;
-
-	i2c_restart:
-	printf("[I2C reinitialize]\n\r");
-	I2C_DeInit(I2C1);
-	i2c1_reinit();
 
 	return eeprom_i2c_status;
 }
@@ -135,7 +135,7 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			/* Fill the full page by writing data */
 			memcpy(page_buffer, data + (count - data_left), page_left_space);
 			TIMED(eeprom_page_write(page_buffer, device_address, word_address,
-				page_left_space) == I2C_TIMEOUT);
+				page_left_space) == I2C_TIMEOUT, eeprom_i2c_restart());
 
 			data_left -= EEPROM_PAGE_SIZE - current_page_write_byte;
 
@@ -146,7 +146,7 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			/* Write the data into current page */
 			memcpy(page_buffer, data + (count - data_left), data_left);
 			TIMED(eeprom_page_write(page_buffer, device_address, word_address,
-				data_left) == I2C_TIMEOUT);
+				data_left) == I2C_TIMEOUT, eeprom_i2c_restart());
 
 			/* Increase the EEPROM page offset */
 			current_page_write_byte += data_left;
@@ -223,14 +223,6 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
 	return eeprom_i2c_status;
-
-	/* Restart the I2C */
-	i2c_restart:
-	printf("[I2C reinitialize]\n\r");
-	I2C_DeInit(I2C1);
-	i2c1_reinit();
-
-	return eeprom_i2c_status;
 }
 
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
@@ -280,7 +272,7 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			/* The page is going to be full */
 			
 			TIMED(eeprom_sequential_read(buffer, device_address, word_address, page_left_space)
-				== I2C_TIMEOUT);
+				== I2C_TIMEOUT, eeprom_i2c_restart());
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, page_left_space);
@@ -293,7 +285,7 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			/* There will be some empty space in this page after the read
 			   operation */
 			TIMED(eeprom_sequential_read(buffer, device_address, word_address, data_left)
-				== I2C_TIMEOUT);
+				== I2C_TIMEOUT, eeprom_i2c_restart());
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, data_left);

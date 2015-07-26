@@ -20,6 +20,7 @@ bool eeprom_is_written;
  * the data back into the EEPROM */
 bool eeprom_pending_flag;
 
+#define QUADCOPTER 0
 int modifiable_data_cnt = 0;
 global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
 	/* global data information */
@@ -101,7 +102,7 @@ global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
 
 void init_global_data(void)
 {
-	/* Calculate the data count on the  ground station parameter
+	/* Calculate the data count on the ground station parameter
 	   configuration panel */
 	int i;
 	for(i = 0; i < get_global_data_count(); i++) {
@@ -184,6 +185,8 @@ int set_global_data_value(int index, Type type, Data value)
 			value.float_value;
 		break;
 	}
+
+	global_mav_data_list[index].updated_flag = true;
 
 	return GLOBAL_SUCCESS;
 }
@@ -552,4 +555,32 @@ void eeprom_debug_print(void)
 	}
 
 	printf("\n\r");
+}
+
+/**
+  * @brief  Set updated_flag
+  * @param  index (int),
+  * @retval None
+  */
+void set_global_data_update_flag(int index){
+	global_mav_data_list[index].updated_flag = true;
+}
+
+
+/**
+  * @brief  Unset updated_flag
+  * @param  index (int),
+  * @retval None
+  */
+void reset_global_data_update_flag(int index){
+	global_mav_data_list[index].updated_flag = false;
+}
+
+/**
+  * @brief  Check global data updated_flag
+  * @param  index (int),
+  * @retval Updated_flag status
+  */
+bool check_global_data_update_flag(int index){
+	return global_mav_data_list[index].updated_flag;
 }
