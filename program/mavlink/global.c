@@ -11,14 +11,6 @@
 
 #define QUADCOPTER 0
 
-#define USE_EEPROM_DEBUG_PRINT 1
-
-#if USE_EEPROM_DEBUG_PRINT == 1
-	#define EEPROM_DEBUG_PRINT printf
-#else
-	#define EEPROM_DEBUG_PRINT(...)
-#endif
-
 void eeprom_debug_print(void);
 
 bool eeprom_is_written;

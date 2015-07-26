@@ -4,8 +4,18 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "io.h"
+
 #define DATA_CAST(data) (Data )(data)
 #define DATA_POINTER_CAST(data) (Data *)(data)
+
+#define USE_EEPROM_DEBUG_PRINT 1
+
+#if USE_EEPROM_DEBUG_PRINT == 1
+	#define EEPROM_DEBUG_PRINT printf
+#else
+	#define EEPROM_DEBUG_PRINT(...)
+#endif
 
 /* Global data enumeration */
 enum {

@@ -33,7 +33,6 @@ eeprom_t eeprom = {
 
 static void eeprom_i2c_restart(void)
 {
-	printf("[I2C reinitialize]\n\r");
 	i2c1_reinit();
 }
 

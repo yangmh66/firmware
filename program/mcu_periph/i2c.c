@@ -2,6 +2,8 @@
 #include "i2c.h"
 #include "AT24C04C.h"
 
+#include "global.h"
+
 void enable_i2c1()
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
@@ -71,6 +73,8 @@ void enable_i2c2()
 
 void i2c1_reinit()
 {
+	EEPROM_DEBUG_PRINT("[I2C reinitialize]\n\r");
+
 	I2C_DeInit(I2C1);
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
