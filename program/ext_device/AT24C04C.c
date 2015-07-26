@@ -7,9 +7,8 @@
 /* I2C Timeout exception */
 typedef enum {I2C_SUCCESS, I2C_TIMEOUT} I2C_Status;
 int i2c_timeout;
-I2C_Status eeprom_i2c_status;
-#define I2C_TIMED(x) i2c_timeout = 0xFFFF; eeprom_i2c_status = I2C_SUCCESS; \
-while(x) { if(i2c_timeout-- == 0) { eeprom_i2c_status = I2C_TIMEOUT; } }
+#define I2C_TIMED(x) i2c_timeout = 0xFFFF; \
+while(x) { if(i2c_timeout-- == 0) { return I2C_TIMEOUT; } }
 
 /* EEPROM Timeout exception */
 int timeout;
@@ -35,7 +34,6 @@ eeprom_t eeprom = {
 static void eeprom_i2c_restart(void)
 {
 	printf("[I2C reinitialize]\n\r");
-	I2C_DeInit(I2C1);
 	i2c1_reinit();
 }
 
@@ -85,7 +83,7 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
 	I2C_AcknowledgeConfig(I2C1, DISABLE);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
-	return eeprom_i2c_status;
+	return I2C_SUCCESS;
 }
 
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
@@ -222,7 +220,7 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 	I2C_AcknowledgeConfig(I2C1, DISABLE);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
-	return eeprom_i2c_status;
+	return I2C_SUCCESS;;
 }
 
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
