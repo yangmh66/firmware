@@ -77,12 +77,10 @@ void i2c1_reinit()
 
 	I2C_DeInit(I2C1);
 
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-	
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_I2C1);
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_I2C1);
 
+	/* Prepare I2C's GPIO configuration */
 	GPIO_InitTypeDef GPIO_InitStruct = {
 		.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9,
 		.GPIO_Mode = GPIO_Mode_AF,
@@ -92,6 +90,7 @@ void i2c1_reinit()
 	};
 	GPIO_Init(GPIOB, &GPIO_InitStruct);
 	
+	/* Prepare GPIO configuration to operate the EEPROM address pin */
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStruct.GPIO_Pin = EEPROM_A2_PIN;
 	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
