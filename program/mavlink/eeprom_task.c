@@ -10,21 +10,42 @@
 
 extern xTaskHandle eeprom_save_task_handle;
 
+bool save_request;
+bool task_has_been_suspended;
 bool eeprom_task_is_running;
-bool task_had_been_suspended;
 
-void eeprom_task_execute(void)
+/**
+  * @brief  Request flight control task to save the data into the EEPROM
+  * @param  None
+  * @retval None
+  */
+void eeprom_save_request(void)
+{
+	save_request = true;
+}
+
+bool check_eeprom_save_request(void)
+{
+	return save_request;
+}
+
+/* Don't call this function directly, call the function "eeprom_save_request" if
+ * you want to save the global data into into the EEPROM!
+ * This function is create for flight control task to mantain the EEPROM resource! */
+void eeprom_task_execute_by_flight_control(void)
 {
 	clear_eeprom_pending_flag();
 
 	vTaskResume(eeprom_save_task_handle);
 }
 
-void eeprom_task_suspend(void)
+/* Don't call this function directly!
+ * This function is create for flight control task to mantain the EEPROM resource! */
+void eeprom_task_suspend_by_flight_control(void)
 {
 	set_eeprom_pending_flag();
 
-	task_had_been_suspended = true;
+	task_has_been_suspended = true;
 
 	vTaskSuspend(eeprom_save_task_handle);
 }
@@ -59,11 +80,14 @@ void eeprom_save_task(void)
 
 		eeprom_task_is_running = false;
 
-		/* If the task has been suspended, the global data should be save into the EEPROM
-		 * again to make sure the data in EEPROM is the newest */
-		if(task_had_been_suspended == true) {
-			task_had_been_suspended = false;
+		/* If the task has been suspended and a new eeprom save request is exist,
+		 * then save global datas into the EEPROM again to make sure the data in 
+		 * EEPROM is the newest */
+		if(task_has_been_suspended == true && save_request == true) {
+			task_has_been_suspended = false;
+			save_request = false;
 		} else {
+			save_request = false;
 			vTaskSuspend(NULL);
 		}
 	}

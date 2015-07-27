@@ -171,13 +171,15 @@ void flight_control_task(void)
 
 			/* Handle EEPROM's request  */
 			if(my_rc.safety == ENGINE_OFF) {
-				//The drone is disarm, if eeprom's task is not finished, execute the task
-				if(is_eeprom_pending_to_save() == true)
-					eeprom_task_execute();
+				//The drone is disarm, wake up the eeprom task
+				if(check_eeprom_save_request() == true) {
+					eeprom_task_execute_by_flight_control();
+				}
 			} else {
 				//Suspend the eeprom task while the drone is going to fly
-				if(is_eeprom_task_running() == true)
-					eeprom_task_suspend();
+				if(is_eeprom_task_running() == true) {
+					eeprom_task_suspend_by_flight_control();
+				}
 			}
 			
 			PID_rc_pass_command(&attitude,&pid_roll_info,&pid_pitch_info,&pid_heading_info,&pid_Z_info,&pid_Zd_info,&pid_nav_info,&my_rc);

@@ -404,22 +404,13 @@ void mission_command(void)
 	    case MAV_CMD_COMPONENT_ARM_DISARM:
 		break;
 	    case MAV_CMD_PREFLIGHT_STORAGE:
-	    { 
-		uint8_t safty_channel;
-		read_global_data_value(SAFTY_BUTTON, DATA_POINTER_CAST(&safty_channel));  
-
-		/* Check the safty button */
-		if(safty_channel != ENGINE_OFF) {
-			set_eeprom_pending_flag();
-			break;
-		}
-
+	    {
 		if((int)mmcl.param1 == 0) {
-			/* Parameter config: Read EEPROM */
+			/* Mavlink EEPROM load request */ 
 			load_global_data_from_eeprom();
 		} else {
-			//Wake up eeprom_write_task to save the data
-			eeprom_task_execute();
+			/* Mavlink EEPROM save request */
+			eeprom_save_request();
 		}
 		break;
 	    }
