@@ -8,7 +8,7 @@
 #define STM32F427X
 /*choose the external device*/
 #define IS_USE_MAGNETOMETER 1
-#define IS_USE_BAROMETER 1
+#define IS_USE_BAROMETER 0
 #define IS_USE_GPS 1
 /*Set magnetometer*/
 #if IS_USE_MAGNETOMETER
