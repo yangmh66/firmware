@@ -91,7 +91,7 @@ void init_global_data(void)
 
 	set_global_data_value(PITCH_KP, FLOAT, DATA_CAST((float)0.20f));
 	set_global_data_value(PITCH_KI, FLOAT, DATA_CAST((float)0.0));
-	set_global_data_value(PITCH_KD, FLOAT, DATA_CAST((float)0.7f));
+	set_global_data_value(PITCH_KD, FLOAT, DATA_CAST((float)0.07f));
 
 	set_global_data_value(YAW_KP, FLOAT, DATA_CAST((float)0.8));
 	set_global_data_value(YAW_KI, FLOAT, DATA_CAST((float)0));
