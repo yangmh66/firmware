@@ -86,7 +86,7 @@ void PID_init(attitude_stablizer_pid_t* PID_roll,attitude_stablizer_pid_t* PID_p
 	PID_roll -> setpoint =0.0;
 
 	PID_pitch -> kp =0.20f;
-	PID_pitch -> kd =0.7f;
+	PID_pitch -> kd =0.07f;
 	PID_pitch -> ki =0.0;
 	PID_pitch -> setpoint =0.0;
 
