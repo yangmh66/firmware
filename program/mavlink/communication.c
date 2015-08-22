@@ -1,45 +1,73 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
+
 #include "_math.h"
+#include "delay.h"
 
 #include "usart.h"
 #include "radio_control.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
 
 #include "mavlink.h"
 
 #include "global.h"
 
 #include "communication.h"
-#include "command_parser.h"
+#include "generic.h"
+#include "parameter.h"
 #include "mission.h"
 #include "eeprom_task.h"
 #include "FreeRTOS.h"
 #include "system_time.h"
 #include "io.h"
 
-mavlink_message_t received_msg;
-mavlink_status_t received_status;
+#define SEND_DEBUG_MAVLINK_STATUS_MSG 1
+
+static void send_heartbeat_info(void);
+static void send_gps_info(void);
+static void send_attitude_info(void);
+static void send_reached_waypoint(void);
+static void send_current_waypoint(void);
+static void send_debug_status_text_message(void);
+
 extern int16_t __nav_roll,__nav_pitch;
 extern uint32_t __pAcc,__numSV;
 extern int32_t __altitude_Zd;
 
-void send_package(mavlink_message_t *msg)
-{
-	uint8_t buf[MAVLINK_MAX_PAYLOAD_LEN];
-	uint16_t len = mavlink_msg_to_send_buffer(buf, msg);
+/* USART TX DMA buffer */
+uint8_t receiver_task_buffer[MAVLINK_MAX_PAYLOAD_LEN];
+uint8_t broadcast_task_buffer[MAVLINK_MAX_PAYLOAD_LEN];
 
-	int i;
-	for(i = 0; i < len; i++)
-		usart3_send(buf[i]);
+/* Mavlink receiver task data read sleep time */
+uint32_t receiver_sleep_time;
+
+/* Mavlink broadcast information */
+broadcast_message_t boradcast_message_list[] = {
+	BROADCAST_MSG_DEF(send_heartbeat_info, RATE_HZ(1)),
+	BROADCAST_MSG_DEF(send_gps_info, RATE_HZ(1)),
+	BROADCAST_MSG_DEF(send_debug_status_text_message, RATE_HZ(1)),
+	BROADCAST_MSG_DEF(send_attitude_info, RATE_HZ(20)),
+	BROADCAST_MSG_DEF(send_reached_waypoint, RATE_HZ(20)),
+	BROADCAST_MSG_DEF(send_current_waypoint, RATE_HZ(20))
+};
+
+void receiver_task_send_package(mavlink_message_t *msg)
+{
+	uint16_t len = mavlink_msg_to_send_buffer(receiver_task_buffer, msg);
+	
+	mavlink_receiver_serial_write(receiver_task_buffer, len);
 }
 
-void clear_message_id(mavlink_message_t *message)
+static void broadcast_task_send_package(mavlink_message_t *msg)
 {
-	message->msgid = 0;
+	uint16_t len = mavlink_msg_to_send_buffer(broadcast_task_buffer, msg);
+
+	status_mavlink_serial_write(broadcast_task_buffer, len);
 }
 
 static void send_heartbeat_info(void)
@@ -85,7 +113,6 @@ static void send_heartbeat_info(void)
 			current_MAV_mode = MAV_MODE_AUTO_DISARMED;
 
 		}
-
 	}
 
 	mavlink_msg_heartbeat_pack(1, 200, &msg,
@@ -95,7 +122,7 @@ static void send_heartbeat_info(void)
 		0, MAV_STATE_ACTIVE
 	);
 
-	send_package(&msg);
+	broadcast_task_send_package(&msg);
 }
 
 static void send_gps_info(void)
@@ -127,7 +154,7 @@ static void send_gps_info(void)
 		(uint16_t)true_yaw
 	);
 
-	send_package(&msg);
+	broadcast_task_send_package(&msg);
 }
 
 static void send_attitude_info(void)
@@ -148,7 +175,7 @@ static void send_attitude_info(void)
 		0.0, 0.0, 0.0
 	);
 
-	send_package(&msg);
+	broadcast_task_send_package(&msg);
 }
 
 #if 0
@@ -178,85 +205,134 @@ static void send_system_info(void)
 
 static void send_reached_waypoint(void)
 {
-	if(waypoint_info.reached_waypoint.is_update == true) {
+	if(mission_info.reached_waypoint.is_update == true) {
 		mavlink_message_t msg;		
 
 		/* Notice the ground station that the vehicle is reached at the 
 	   	waypoint */
 		mavlink_msg_mission_item_reached_pack(1, 0, &msg,
-			waypoint_info.reached_waypoint.number);
-		send_package(&msg);
+			mission_info.reached_waypoint.number);
+		broadcast_task_send_package(&msg);
 
-		waypoint_info.reached_waypoint.is_update = false;
+		mission_info.reached_waypoint.is_update = false;
 	}
 }
 
 static void send_current_waypoint(void)
 {
-	if(waypoint_info.current_waypoint.is_update == true) {
+	if(mission_info.current_waypoint.is_update == true) {
 		mavlink_message_t msg;		
 
 		/* Update the new current waypoint */
 		mavlink_msg_mission_current_pack(1, 0, &msg,
-			waypoint_info.current_waypoint.number);
-		send_package(&msg);
+			mission_info.current_waypoint.number);
+		broadcast_task_send_package(&msg);
 
-		waypoint_info.current_waypoint.is_update = false;
+		mission_info.current_waypoint.is_update = false;
 	}
 }
 
-void ground_station_task(void)
+void send_status_text_message(char *text, uint8_t severity)
 {
-	uint32_t delay_t =(uint32_t) 50.0/(1000.0 / configTICK_RATE_HZ);
-	uint32_t cnt = 0;
-	uint8_t msg_buff[50];
 	mavlink_message_t msg;
-	while(1) {
-		if(cnt == 8) {
-			send_heartbeat_info();
-			send_gps_info();
-			//send_system_info();
 
-			cnt = 0;
-		}
+	mavlink_msg_statustext_pack(1, 0, &msg, severity, text);
+	broadcast_task_send_package(&msg);
+}
 
-		if(cnt == 5) {
+static void send_debug_status_text_message(void)
+{
+#if SEND_DEBUG_MAVLINK_STATUS_MSG != 0
+	char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN];
 
+	sprintf(text, "Zd:%ld NAV: %d,%d,%ld,%ld",
+		__altitude_Zd,
+		__nav_roll,
+		__nav_pitch,
+		__pAcc,
+		__numSV
+	);
+
+	send_status_text_message(text, MAV_SEVERITY_DEBUG);
+#endif	
+}
+
+void set_mavlink_receiver_delay_time(uint32_t time)
+{
+	receiver_sleep_time = time;
+}
+
+static void handle_message(mavlink_message_t *mavlink_message)
+{
+	if(generic_handle_message(mavlink_message) == true) {
+		return;
+	}
 	
-			sprintf((char *)msg_buff, "Zd:%ld NAV: %d,%d,%ld,%ld",
-				__altitude_Zd,
-				__nav_roll,
-				__nav_pitch,
-				__pAcc,
-				__numSV);
+	if(mission_handle_message(mavlink_message) == true) {
+		return;
+	}
 
-			mavlink_msg_statustext_pack(1,
-					0,
-					&msg,
-					0,
-					(const char *) &msg_buff);
-			//send_package(&msg);
-			
-		}
-
-		send_attitude_info();
-		send_reached_waypoint();
-		send_current_waypoint();
-
-		vTaskDelay(delay_t);
-
-		mavlink_parse_received_cmd(&received_msg);
-		cnt++;
+	/* If still return a false value, this is a parser undefined mavlink message */
+	if(parameter_handle_message(mavlink_message) == false) {
+		MAVLINK_DEBUG_PRINT("[Parser undefined message]msgid:%d\n\r", mavlink_message->msgid);
 	}
 }
 
 void mavlink_receiver_task(void)
 {
-	uint8_t buffer;
+	int buffer;
+	receiver_sleep_time = portMAX_DELAY; //Sleep until someone wake the task up
+	
+	mavlink_message_t mavlink_message;
+	mavlink_status_t message_status;
 
 	while(1) {
-		buffer = usart3_read();
+		//Try to receive a byte, if there is no data, the task won't be waken
+		buffer = usart3_read(receiver_sleep_time);
 
-		mavlink_parse_char(MAVLINK_COMM_0, buffer, &received_msg, &received_status); 
+		//Parse and handle the mavlink message if the data is available
+		if(buffer != USART_NOT_AVAILABLE) {
+			if(mavlink_parse_char(MAVLINK_COMM_0, buffer, &mavlink_message, &message_status)) {
+				handle_message(&mavlink_message);
+			}
+		}
+
+		mavlink_mission_timeout_check();
+
+		parameter_send(); //Will only be executed if parser received the request
+	}
+}
+
+void mavlink_broadcast_task()
+{
+	uint32_t current_time;
+
+	unsigned int i;
+	uint32_t compare_tick_time = boradcast_message_list[0].period_tick;
+	for(i = 1; i < BROADCAST_MESSAGE_CNT; i++) {
+		//Find the minimum tick value in the list
+		if(boradcast_message_list[i].period_tick < compare_tick_time) {
+			compare_tick_time = boradcast_message_list[i].period_tick;	
+		}
+	}
+
+	//Set task delay time to 1/10 minimum broadcast period time
+	uint32_t broadcast_delay_time = compare_tick_time / 10;
+
+	while(1) {
+		for(i = 0; i < BROADCAST_MESSAGE_CNT; i++) {
+			current_time = get_system_time_ms();
+
+			/* Timeout check */
+			if((current_time - boradcast_message_list[i].last_send_time) >=
+				boradcast_message_list[i].period_tick)
+			{
+				/* Send message and update timer */
+				boradcast_message_list[i].send_message();
+				boradcast_message_list[i].last_send_time = current_time;
+			}
+		}
+
+		vTaskDelay(broadcast_delay_time);
 	}
 }

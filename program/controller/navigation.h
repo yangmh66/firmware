@@ -9,6 +9,15 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+/* Debug print configuration */
+#define PRINT_WAYPOINT_DEBUG_MESSAGE 0
+
+#if PRINT_WAYPOINT_DEBUG_MESSAGE != 0
+        #define WAYPOINT_DEBUG printf
+#else
+        #define WAYPOINT_DEBUG(...) //Dummy
+#endif
+
 #define CONTROLLER_DISABLE 0
 #define CONTROLLER_ENABLE 1
 
