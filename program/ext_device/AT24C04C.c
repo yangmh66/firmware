@@ -153,6 +153,11 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 	return EEPROM_SUCCESS;
 }
 
+void I2C1_EV_IRQHandler(void)
+{
+	printf_base("Yo~~~I am I2C\n\r");
+}
+
 static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8_t word_address,
 	int buffer_count)
 {

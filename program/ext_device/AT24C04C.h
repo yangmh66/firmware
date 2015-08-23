@@ -18,4 +18,6 @@ enum {
 	EEPROM_BUFFER_OVERFLOW
 } EEPROM_Exit_Status;
 
+void I2C1_EV_IRQHandler(void);
+
 #endif

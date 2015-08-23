@@ -2,6 +2,10 @@
 #include "i2c.h"
 #include "AT24C04C.h"
 
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+
 #include "global.h"
 
 void enable_i2c1()
@@ -38,6 +42,16 @@ void enable_i2c1()
 	};
 	I2C_Init(I2C1, &I2C_InitStruct);
 
+	/* Enable I2C interrupt handler  */
+	NVIC_InitTypeDef NVIC_InitStruct = {
+		.NVIC_IRQChannel = I2C1_EV_IRQn,
+		.NVIC_IRQChannelPreemptionPriority = configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY + 2,
+		.NVIC_IRQChannelSubPriority = 0,
+		.NVIC_IRQChannelCmd = ENABLE
+	};
+	NVIC_Init(&NVIC_InitStruct);
+
+	I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
 	I2C_AcknowledgeConfig(I2C1,ENABLE);
 	I2C_Cmd(I2C1, ENABLE);
 } 
