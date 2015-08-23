@@ -67,9 +67,6 @@ int main(void)
 	serial_rx_queue = xQueueCreate(256, sizeof(serial_msg));
 	gps_serial_queue = xQueueCreate(5, sizeof(serial_msg));
 
-	/* Global data initialazition */
-	init_global_data();
-
 	/* Hardware initialization */
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
 	gpio_rcc_init();
