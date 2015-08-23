@@ -59,16 +59,10 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
 	/* Test on I2C EV8 and clear it */
 	I2C_TIMED(! I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
-	while(data_count--) {
-		/* Send the current byte */
-		I2C_SendData(I2C1, *data); 
+	i2c1_send(data, data_count);
+	while(DMA_GetCurrDataCounter(DMA1_Stream7) != 0) {printf("%d-%d\n\r", data_count,DMA_GetCurrDataCounter(DMA1_Stream7));}
 
-		/* Point to the next byte to be written */
-		data++; 
-  
-		/* Test on I2C EV8 and clear it */
-		I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
-	}
+	printf("TEST");
 
 	/* Send the I2C stop condition */
 	I2C_GenerateSTOP(I2C1, ENABLE);

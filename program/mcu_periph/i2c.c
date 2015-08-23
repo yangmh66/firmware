@@ -49,9 +49,9 @@ void enable_i2c1()
 		.NVIC_IRQChannelSubPriority = 0,
 		.NVIC_IRQChannelCmd = ENABLE
 	};
-	NVIC_Init(&NVIC_InitStruct);
+//	NVIC_Init(&NVIC_InitStruct);
 
-	I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
+//	I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
 	I2C_AcknowledgeConfig(I2C1,ENABLE);
 	I2C_Cmd(I2C1, ENABLE);
 } 
@@ -129,3 +129,27 @@ void i2c_Init()
 	enable_i2c1();
 	enable_i2c2();
 }
+
+void i2c1_send(uint8_t *data, int data_count)
+{
+	DMA_InitTypeDef DMA_InitStructure = {
+		.DMA_Channel = DMA_Channel_7,
+		.DMA_PeripheralBaseAddr = (uint32_t)(&(I2C1->DR)),
+		.DMA_Memory0BaseAddr = (uint32_t)data,
+		.DMA_DIR = DMA_DIR_MemoryToPeripheral,
+		.DMA_BufferSize = data_count,
+		.DMA_PeripheralInc = DMA_PeripheralInc_Disable,
+		.DMA_MemoryInc = DMA_MemoryInc_Enable,
+		.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte,
+		.DMA_Mode = DMA_Mode_Normal,
+		.DMA_Priority = DMA_Priority_Medium,
+		.DMA_FIFOMode = DMA_FIFOMode_Enable,
+		.DMA_FIFOThreshold = DMA_FIFOThreshold_Full,
+		.DMA_MemoryBurst = DMA_MemoryBurst_Single,
+		.DMA_PeripheralBurst = DMA_PeripheralBurst_Single
+	};
+	DMA_Init(DMA1_Stream7, &DMA_InitStructure);
+
+	DMA_Cmd(DMA1_Stream7, ENABLE);
+}
+
