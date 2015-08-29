@@ -14,13 +14,6 @@ while(x) { if(i2c_timeout-- == 0) { return I2C_TIMEOUT; } }
 int timeout;
 #define TIMED(x, restart) timeout = 0xFFFF; while(x) { if(timeout-- == 0) break; restart;}
 
-/* EEPROM Information */
-#define EEPROM_DEVICE_BASE_ADDRESS 0xA8
-#define EEPROM_WORD_BASE_ADDRESS 0x00
-
-#define EEPROM_PAGE_SIZE 16
-#define EEPROM_MAX_SIZE 1024
-
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 void eeprom_clear(void);
