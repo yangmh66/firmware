@@ -10,6 +10,12 @@
 #define EEPROM_PAGE_SIZE 16
 #define EEPROM_MAX_SIZE 1024
 
+enum {
+	EEPROM_SUCCESS,
+	EEPROM_INVALID_ADDRESS,
+	EEPROM_BUFFER_OVERFLOW
+} EEPROM_Exit_Status;
+
 /* EEPROM */
 typedef struct {
 	int (*write)(uint8_t *data, uint16_t eeprom_address, uint16_t count);
@@ -18,12 +24,6 @@ typedef struct {
 } eeprom_t;
 
 extern eeprom_t eeprom;
-
-enum {
-	EEPROM_SUCCESS,
-	EEPROM_INVALID_ADDRESS,
-	EEPROM_BUFFER_OVERFLOW
-} EEPROM_Exit_Status;
 
 void I2C1_EV_IRQHandler(void);
 

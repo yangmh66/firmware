@@ -1,8 +1,18 @@
 #include <string.h>
+
 #include "stm32f4xx_conf.h"
+
 #include "i2c.h"
+
 #include "AT24C04C.h"
+
 #include "delay.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+
+xSemaphoreHandle eeprom_sem = NULL;
 
 /* I2C Timeout exception */
 typedef enum {I2C_SUCCESS, I2C_TIMEOUT} I2C_Status;
@@ -13,6 +23,8 @@ while(x) { if(i2c_timeout-- == 0) { return I2C_TIMEOUT; } }
 /* EEPROM Timeout exception */
 int timeout;
 #define TIMED(x, restart) timeout = 0xFFFF; while(x) { if(timeout-- == 0) break; restart;}
+
+//Add a busy flag check macro
 
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count);
@@ -32,6 +44,46 @@ static void eeprom_i2c_restart(void)
 void I2C1_EV_IRQHandler(void)
 {
 	printf_base("Yo~~~I am I2C\n\r");
+
+	switch(I2C_GetLastEvent(I2C1)) {
+	    case I2C_EVENT_MASTER_MODE_SELECT:
+		break;
+	    case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
+		break;
+	    case I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED:
+		break;
+	    case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
+		break;
+	    case I2C_EVENT_MASTER_BYTE_RECEIVED:
+		break;
+	    default:
+		break;
+	}
+
+	/*
+	if(Fail) {
+		bus_reset();
+	} else {
+		xSemaphoreGiveFromISR(eeprom_sem);
+		task_wake();
+	}
+	 */
+}
+
+#define EEPROM_I2C_TIMEOUT_TIME (MILLI_SECOND_TICK * 1)
+int i2c_check_event(int event)
+{
+	int timeout_count = 0, timeout_divide_count = 10;
+
+	while(xSemaphoreTake(eeprom_sem, EEPROM_I2C_TIMEOUT_TIME / timeout_divide_count) == pdFALSE) {
+		timeout_count++;
+
+		if(timeout_count == timeout_divide_count) {
+			//return ERROR_TIMEOUT;
+		}
+	}
+
+	//return SUCCESS;
 }
 
 /**
