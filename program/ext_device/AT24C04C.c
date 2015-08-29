@@ -29,49 +29,44 @@ static void eeprom_i2c_restart(void)
 	i2c1_reinit();
 }
 
+/**
+  * @brief  EEPROM low level i2c writting
+  * @param  Data array (pass with pointer), i2c device address, eeprom word address and count
+  *	    of the data
+  * @retval Operating result
+  */
 static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word_address, 
 	int data_count)
 {
 	I2C_TIMED(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY));
 
-	/* Send the I2C start condition */
+	/* Generate the start condition */
 	I2C_GenerateSTART(I2C1, ENABLE);
- 	 
-	/* Test on I2C EV5 and clear it */
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)); 
   
-	/* Send EEPROM address for write */
+	/* Send I2C device address */
 	I2C_Send7bitAddress(I2C1, device_address, I2C_Direction_Transmitter);
-  
-	/* Test on I2C EV6 and clear it */
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));  
 
-	/* Send the EEPROM word address */    
-	I2C_SendData(I2C1, word_address);  
-
-	/* Test on I2C EV8 and clear it */
+	/* Send the EEPROM word address */
+	I2C_SendData(I2C1, word_address);
 	I2C_TIMED(! I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
+	/* Write the data into EEPROM  */
 	while(data_count--) {
-		/* Send the current byte */
-		I2C_SendData(I2C1, *data); 
-
-		/* Point to the next byte to be written */
-		data++; 
-  
-		/* Test on I2C EV8 and clear it */
+		/* Save current data byte into EEPROM */
+		I2C_SendData(I2C1, *data); //Send current data 
 		I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+
+		data++; 
 	}
 
-	/* Send the I2C stop condition */
+	/* Generate the stop conditon */
 	I2C_GenerateSTOP(I2C1, ENABLE);
-
-	/* Wait to make sure that STOP control bit has been cleared */
 	I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
 
 	Delay_1us(5000);
 
-	/* Restart the I2C */
 	I2C_AcknowledgeConfig(I2C1, DISABLE);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
@@ -146,44 +141,41 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 	return EEPROM_SUCCESS;
 }
 
+/**
+  * @brief  EEPROM low level i2c reading
+  * @param  Store buffer(pointer), i2c device address, eeprom word address and count
+  *	    of the received data
+  * @retval Operating result
+  */
 static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8_t word_address,
 	int buffer_count)
 {
 	I2C_TIMED(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY));
  
-	/* Send the I2C start condition */
+	/* Generate the start condition */
 	I2C_GenerateSTART(I2C1, ENABLE);
-  
-	/* Test on I2C EV5 and clear it */
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
 
-	/* Send the device address */
+	/* Send I2C device address */
 	I2C_Send7bitAddress(I2C1, device_address, I2C_Direction_Transmitter);
-
-	/* Test on I2C EV6 and clear it */
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
   
 	/* Clear the I2C EV6 by setting again the PE bit */
 	I2C_Cmd(I2C1, ENABLE);
 
-	/* Send the word_address */
+	/* Send the EEPROM word address */
 	I2C_SendData(I2C1, word_address);  
-
-	/* Test on I2C EV8 and clear it */
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
   
-	/* Send the start condition a second time */  
+	/* Generate the start condition again */
 	I2C_GenerateSTART(I2C1, ENABLE);
-  
-	/* Test on I2C EV5 and clear it */
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
   
-	/* Send the device address */
+	/* Send I2C device address again */
 	I2C_Send7bitAddress(I2C1, device_address, I2C_Direction_Receiver);
-  
-	/* Test on I2C EV6 and clear it */
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
   
+	/* Read the data from EEPROM */
 	while(buffer_count) {
 		if(buffer_count == 1) {
 			/* Disable Acknowledgement */
@@ -193,20 +185,15 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 			I2C_GenerateSTOP(I2C1, ENABLE);
 		}
 
-		/* Test on EV7 and clear it */
+		/* Receive a byte if data is available */
 		I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED));
-		
-		/* Read a byte from the EEPROM */
 		*buffer = I2C_ReceiveData(I2C1);
 
-		/* Point to the next location where the byte read will be saved */
-		buffer++;
-
-		/* Decrement the read bytes counter */
-		buffer_count--;
-
-		/* Wait to make sure that STOP control bit has been cleared */
+		/* Wait for stop condition */
 		I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
+
+		buffer++;
+		buffer_count--;
 	}
 
 	I2C_AcknowledgeConfig(I2C1, DISABLE);
