@@ -29,6 +29,11 @@ static void eeprom_i2c_restart(void)
 	i2c1_reinit();
 }
 
+void I2C1_EV_IRQHandler(void)
+{
+	printf_base("Yo~~~I am I2C\n\r");
+}
+
 /**
   * @brief  EEPROM low level i2c writting
   * @param  Data array (pass with pointer), i2c device address, eeprom word address and count
