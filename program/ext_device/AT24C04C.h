@@ -16,7 +16,20 @@ enum {
 	EEPROM_BUFFER_OVERFLOW
 } EEPROM_Exit_Status;
 
-/* EEPROM */
+enum {
+	EEPROM_DEVICE_IDLE,
+	EEPROM_DEVICE_WRITE,
+	EEPROM_DEVICE_READ
+} EEPROM_Device_State;
+
+typedef struct {
+	int state; //Check ENUM "EEPROM_Device_State"
+	int address;
+	uint8_t *buffer;
+	int buffer_count;
+	int exit_status; //Check ENUM "EEPROM_Exit_Status"
+} eeprom_device_info_t;
+
 typedef struct {
 	int (*write)(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 	int (*read)(uint8_t *data, uint16_t eeprom_address, uint16_t count);
