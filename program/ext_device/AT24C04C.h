@@ -20,10 +20,14 @@ enum {
 	EEPROM_DEVICE_IDLE,
 	EEPROM_DEVICE_WRITE,
 	EEPROM_DEVICE_READ
-} EEPROM_Device_State;
+} EEPROM_Operating_Type;
+
+enum {
+} EEPROM_Write_Read_State;
 
 typedef struct {
-	int state; //Check ENUM "EEPROM_Device_State"
+	int operating_type; //Check ENUM "EEPROM_Operating_Type"
+	int state; //Check ENUM "EEPROM_Write_Read_State"
 	int address;
 	uint8_t *buffer;
 	int buffer_count;

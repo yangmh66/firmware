@@ -66,32 +66,8 @@ static void handle_eeprom_write_request(void)
 
 	//Please carefully read the procedure first then read the code below
 
-	if(eeprom_device_info.state != EEPROM_DEVICE_WRITE) {
+	if(eeprom_device_info.operating_type != EEPROM_DEVICE_WRITE) {
 		return;
-	}
-
-	switch(I2C_GetLastEvent(I2C1)) {
-	    case I2C_EVENT_MASTER_MODE_SELECT:
-	    {
-		break;
-	    }
-	    case I2C_Direction_Transmitter:
-	    {
-		break;
-	    }
-	    case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
-	    {
-		break;
-	    }
-	    case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
-	    {
-		break;
-	    }
-	    default:
-	    {
-		//XXX:Error, reset I2C bus?
-		break;
-	    }
 	}
 }
 
@@ -122,40 +98,86 @@ static void handle_eeprom_read_request(void)
 
 	//Please carefully read the procedure first then read the code below
 
-	if(eeprom_device_info.state != EEPROM_DEVICE_READ) {
+	if(eeprom_device_info.operating_type != EEPROM_DEVICE_READ) {
 		return;
 	}
 
-	switch(I2C_GetLastEvent(I2C1)) {
-	    case I2C_EVENT_MASTER_MODE_SELECT:
+	uint32_t current_event = I2C_GetLastEvent(I2C1);
+	bool event_compare_failed = true;
+
+	/* I2C Event handler */
+	switch(eeprom_device_info.state) {
+	    case GENERATE_START_CONDITION:
 	    {
+		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
+			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
+
+			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
+			event_compare_failed = false;
+		}
 		break;
 	    }
-	    case I2C_Direction_Transmitter:
+	    case SEND_DEVICE_ADDRESS: //I2C device address
 	    {
+		if(current_event == I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED) {
+			I2C_Cmd(I2C1, ENABLE);
+			I2C_SendData(I2C1, eeprom_device_info.word_address);
+
+			eeprom_device_info.state = SEND_EEPROM_ADDRESS;
+			event_compare_failed = false;
+		}
 		break;
 	    }
-	    case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
+	    case SEND_WORD_ADDRESS: //EEPROM address
 	    {
+		if(current_event == I2C_EVENT_MASTER_BYTE_TRANSMITTED) {
+			I2C_GenerateSTART(I2C1, ENABLE);
+
+			eeprom_device_info.state = GENERATE_START_CONDITION_AGAIN;
+			event_compare_failed = false;
+		}
 		break;
 	    }
-	    case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
+	    case GENERATE_START_CONDITION_AGAIN:
 	    {
+		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
+			 I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
+
+			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
+			event_compare_failed = false;
+		}
 		break;
 	    }
-	    case I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED:
+	    case SEND_DEVICE_ADDRESS_AGAIN:
 	    {
+		if(current_event == I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED) {
+			*(eeprom_device_info.buffer) = I2C_ReceiveData(I2C1);
+			eeprom_device_info.received_count++;
+
+			eeprom_device_info.state = RECEIVE_DATA;
+			event_compare_failed = false;
+		}
 		break;
 	    }
-	    case I2C_EVENT_MASTER_BYTE_RECEIVED:
+	    case RECEIVE_DATA:
 	    {
-		break;
+		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
+			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
+			eeprom_device_info.received_count++;
+
+			if(eeprom_device_info.buffer_count == eeprom_device_info.received_count) {
+				eeprom_device_info.operating_type = EEPROM_IDLE;
+				xSemaphoreGiveFromISR(eeprom_sem, I_Dont_Know);
+			}
+
+			event_compare_failed = false;
+			break;
+		}
 	    }
-	    default:
-	    {
-		//XXX:Error, reset I2C bus?
-		break;
-	    }
+	}
+
+	if(event_compare_failed == true) {
+		//Unknown error, reset the I2C bus!
 	}
 }
 
