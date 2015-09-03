@@ -13,6 +13,9 @@
 #define EEPROM_PAGE_SIZE 16
 #define EEPROM_MAX_SIZE 1024
 
+/* I2C event timeout */
+#define I2C_TIMEOUT_COUNT_MAX 10
+
 enum {
 	I2C_SUCCESS,
 	I2C_BUSY_FAILED,
@@ -51,6 +54,7 @@ typedef struct {
 	int buffer_count;
 	int sent_count;
 	int received_count;
+	int timeout_counter;
 	int exit_status; //Check ENUM "EEPROM_Exit_Status"
 } eeprom_device_info_t;
 

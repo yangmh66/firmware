@@ -61,7 +61,7 @@ static void handle_eeprom_write_request(void)
 	 * 7.Generate stop condition -> wait for stop event
 	 */
 
-	//Please carefully read view procedure first then read the code below
+	//Please carefully view procedure first then read the code below
 
 	if(eeprom_device_info.operating_type != EEPROM_DEVICE_WRITE) {
 		return;
@@ -80,6 +80,7 @@ static void handle_eeprom_write_request(void)
 			I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
 
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 		}
 		break;
@@ -90,6 +91,7 @@ static void handle_eeprom_write_request(void)
 			I2C_SendData(I2C1, eeprom_device_info.address);
 
 			eeprom_device_info.state = SEND_WORD_ADDRESS;
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 		}
     		break;
@@ -101,6 +103,7 @@ static void handle_eeprom_write_request(void)
 			eeprom_device_info.sent_count++;
 
 			eeprom_device_info.state = SEND_DATA;
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 		}
 		break;
@@ -108,6 +111,7 @@ static void handle_eeprom_write_request(void)
 	    case SEND_DATA:
 	    {
 		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 
 			/* Finish sending all datas */
@@ -170,6 +174,7 @@ static void handle_eeprom_read_request(void)
 			I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
 
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 		}
 		break;
@@ -181,6 +186,7 @@ static void handle_eeprom_read_request(void)
 			I2C_SendData(I2C1, eeprom_device_info.address);
 
 			eeprom_device_info.state = SEND_WORD_ADDRESS;
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 		}
 		break;
@@ -191,6 +197,7 @@ static void handle_eeprom_read_request(void)
 			I2C_GenerateSTART(I2C1, ENABLE);
 
 			eeprom_device_info.state = GENERATE_START_CONDITION_AGAIN;
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 		}
 		break;
@@ -201,6 +208,7 @@ static void handle_eeprom_read_request(void)
 			 I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
 
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 		}
 		break;
@@ -212,6 +220,7 @@ static void handle_eeprom_read_request(void)
 			eeprom_device_info.received_count++;
 
 			eeprom_device_info.state = RECEIVE_DATA;
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 		}
 		break;
@@ -219,6 +228,7 @@ static void handle_eeprom_read_request(void)
 	    case RECEIVE_DATA:
 	    {
 		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
+			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 
 			if(eeprom_device_info.received_count == eeprom_device_info.buffer_count) {
@@ -272,6 +282,8 @@ static int eeprom_page_write(uint8_t *data, uint8_t word_address, int data_count
 		return I2C_BUSY_FAILED;
 	}
 
+	uint32_t delay_time = MILLI_SECOND_TICK / I2C_TIMEOUT_COUNT_MAX;
+
 	/* Set EEPROM device information */
 	eeprom_device_info.state = EEPROM_DEVICE_WRITE;
 	eeprom_device_info.address = word_address;
@@ -280,8 +292,16 @@ static int eeprom_page_write(uint8_t *data, uint8_t word_address, int data_count
 
 	I2C_GenerateSTART(I2C1, ENABLE);
 
-	//TODO: Timeout check
-	while (!xSemaphoreTake(eeprom_sem, portMAX_DELAY));
+	/* Trigger I2C interrupt handler to do the job */
+	while (!xSemaphoreTake(eeprom_sem, delay_time)) {
+		//Wakeup for every delay_time tick and do the timeout check
+		if(eeprom_device_info.timeout_counter == I2C_TIMEOUT_COUNT_MAX) {
+			//XXX:Timeout! Reset the bus
+			return I2C_TIMEOUT_FAILED;
+		}
+
+		eeprom_device_info.timeout_counter++;
+	}
 
 	return eeprom_device_info.exit_status;
 }
@@ -299,6 +319,8 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t word_address, int buf
 		return I2C_BUSY_FAILED;
 	}
 
+	uint32_t delay_time = MILLI_SECOND_TICK / I2C_TIMEOUT_COUNT_MAX;
+
 	/* Set EEPROM device information */
 	eeprom_device_info.state = EEPROM_DEVICE_READ;
 	eeprom_device_info.address = word_address;
@@ -307,8 +329,16 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t word_address, int buf
 
 	I2C_GenerateSTART(I2C1, ENABLE);
 
-	//TODO:Timeout check
-	while (!xSemaphoreTake(eeprom_sem, portMAX_DELAY));
+	/* Trigger I2C interrupt handler to do the job */
+	while (!xSemaphoreTake(eeprom_sem, delay_time)) {
+		//Wakeup for every delay_time tick and do the timeout check
+		if(eeprom_device_info.timeout_counter == I2C_TIMEOUT_COUNT_MAX) {
+			//XXX:Timeout! Reset the bus
+			return I2C_TIMEOUT_FAILED;
+		}
+
+		eeprom_device_info.timeout_counter++;
+	}
 
 	return eeprom_device_info.exit_status;
 }
