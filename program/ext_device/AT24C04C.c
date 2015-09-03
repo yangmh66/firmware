@@ -52,18 +52,9 @@ static int i2c_busy_flag_check(void)
 
 static void handle_eeprom_write_request(void)
 {
-	/* [Brief procedure]
-	 * 1.Generate start condition
-	 * 2.Send I2C device address
-	 * 3.Send EEPROM address
-	 * 4.Send all datas
-	 * 5.Generate stop condition
-	 */
-
-	/* [Detailed procedure]
+	/* [Procedure]
 	 * 1.Generate start condition -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
-	 * 2.Send I2C device address -> wait for event "I2C_Direction_Transmitter"
-	 * 3.Wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
+	 * 2.Send I2C device address -> wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
 	 * 4.Send EEPROM address -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED" 
 	 * 5.Send a byte to EEPROM -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED"
 	 * 6.Loop step 5 until finish sending the data
@@ -117,14 +108,22 @@ static void handle_eeprom_write_request(void)
 	    case SEND_DATA:
 	    {
 		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
-			I2C_SendData(I2C1, eeprom_device_info.buffer[eeprom_device_info.sent_count]);
+			event_compare_failed = false;
 
+			/* Finish sending all datas */
 			if(eeprom_device_info.sent_count == eeprom_device_info.buffer_count) {
+				I2C_GenerateSTOP(I2C1, ENABLE);
+
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
 				eeprom_device_info.sent_count = 0;
 				eeprom_device_info.exit_status = I2C_SUCCESS;
 				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+
+				break;
 			}
+
+			I2C_SendData(I2C1, eeprom_device_info.buffer[eeprom_device_info.sent_count]);
+			eeprom_device_info.sent_count++;
 		}
 		break;
 	    }
@@ -141,27 +140,15 @@ static void handle_eeprom_write_request(void)
 
 static void handle_eeprom_read_request(void)
 {
-	/* [Brief procedure]
-	 * 1.Generate start condition
-	 * 2.Send I2C device address
-	 * 3.Send EEPROM address
-	 * 4.Generate start condition again
-	 * 5.Send I2C device address again
-	 * 6.Receive all datas
-	 * 7.Generate stop condition
-	 */
-
-	/* [Detailed Procedure]
+	/* [Procedure]
 	 * 1.Generate start condition -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
-	 * 2.Send I2C device address -> wait for event "I2C_Direction_Transmitter"
-	 * 3.Wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
-	 * 4.Send EEPROM address -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED" 
-	 * 5.Generate start condition again -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
-	 * 6.Send I2C device address again -> wait for event "I2C_Direction_Transmitter"
-	 * 7.Wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED" again
-	 * 8.Read a byte from EEPROM -> wait for event "I2C_EVENT_MASTER_BYTE_RECEIVED"
-	 * 9.Loop step 8 until finish receiving the data
-	 * 10.Generate stop condition -> wait for stop event
+	 * 2.Send I2C device address -> wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
+	 * 3.Send EEPROM address -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED" 
+	 * 4.Generate start condition again -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
+	 * 5.Send I2C device address again -> wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
+	 * 6.Read a byte from EEPROM -> wait for event "I2C_EVENT_MASTER_BYTE_RECEIVED"
+	 * 7.Loop step 8 until finish receiving the data
+	 * 8.Generate stop condition -> wait for stop event
 	 */
 
 	//Please carefully view the procedure first then read the code below
@@ -232,17 +219,22 @@ static void handle_eeprom_read_request(void)
 	    case RECEIVE_DATA:
 	    {
 		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
-			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
-			eeprom_device_info.received_count++;
+			event_compare_failed = false;
 
 			if(eeprom_device_info.received_count == eeprom_device_info.buffer_count) {
+				I2C_AcknowledgeConfig(I2C1, DISABLE);
+				I2C_GenerateSTOP(I2C1, ENABLE);
+
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
 				eeprom_device_info.received_count = 0;
 				eeprom_device_info.exit_status = I2C_SUCCESS;
 				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+
+				break;
 			}
 
-			event_compare_failed = false;
+			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
+			eeprom_device_info.received_count++;
 		}
 		break;
 	    }
