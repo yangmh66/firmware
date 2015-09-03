@@ -286,6 +286,9 @@ void mavlink_receiver_task(void)
 	mavlink_message_t mavlink_message;
 	mavlink_status_t message_status;
 
+	/* Global data initialazition */
+	init_global_data();
+
 	while(1) {
 		//Try to receive a byte, if there is no data, the task won't be waken
 		buffer = usart3_read(receiver_sleep_time);
