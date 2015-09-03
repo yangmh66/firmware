@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <string.h>
 
 #include "stm32f4xx_conf.h"
@@ -12,22 +13,10 @@
 #include "task.h"
 #include "semphr.h"
 
-/* Hardware abstraction */
-#define EEPROM_I2C_IRQ_HANDLER I2C1_EV_IRQHandler
-
-xSemaphoreHandle eeprom_sem = NULL;
-
-eeprom_device_info_t eeprom_device_info;
-
-/* I2C Timeout exception */
-typedef enum {I2C_SUCCESS, I2C_TIMEOUT} I2C_Status;
-int i2c_timeout;
-#define I2C_TIMED(x) i2c_timeout = 0xFFFF; \
-while(x) { if(i2c_timeout-- == 0) { return I2C_TIMEOUT; } }
-
 /* EEPROM Timeout exception */
 int timeout;
-#define TIMED(x, restart) timeout = 0xFFFF; while(x) { if(timeout-- == 0) break; restart;}
+#define TIMED(x) timeout = 0xFF; while(x) \
+	{ if(timeout-- == 0) {break; i2c_bus_reset(); return EEPROM_I2C_FAILED;} }
 
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count);
@@ -39,9 +28,26 @@ eeprom_t eeprom = {
 	.clear = eeprom_clear
 };
 
-static void eeprom_i2c_restart(void)
+xSemaphoreHandle eeprom_sem = NULL;
+
+eeprom_device_info_t eeprom_device_info;
+
+static void i2c_bus_reset(void)
 {
-		i2c1_reinit();
+	i2c1_reinit();
+}
+
+static int i2c_busy_flag_check(void)
+{
+	int timeout_counter = 0xFFFF;
+
+	while(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY)) {
+		if((timeout_counter--) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 static void handle_eeprom_write_request(void)
@@ -64,11 +70,73 @@ static void handle_eeprom_write_request(void)
 	 * 7.Generate stop condition -> wait for stop event
 	 */
 
-	//Please carefully read the procedure first then read the code below
+	//Please carefully read view procedure first then read the code below
 
 	if(eeprom_device_info.operating_type != EEPROM_DEVICE_WRITE) {
 		return;
 	}
+
+	uint32_t current_event = I2C_GetLastEvent(I2C1);
+	bool event_compare_failed = true;
+
+	long higher_priority_task_woken = pdFALSE;
+
+	/* I2C Event handler */
+	switch(eeprom_device_info.state) {
+	    case GENERATE_START_CONDITION:
+	    {
+		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
+			I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
+
+			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
+			event_compare_failed = false;
+		}
+		break;
+	    }
+	    case SEND_DEVICE_ADDRESS: //I2C device address
+	    {
+		if(current_event == I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED) {
+			I2C_SendData(I2C1, eeprom_device_info.address);
+
+			eeprom_device_info.state = SEND_WORD_ADDRESS;
+			event_compare_failed = false;
+		}
+    		break;
+	    }
+	    case SEND_WORD_ADDRESS: //EEPROM address
+	    {
+		if(current_event == I2C_EVENT_MASTER_BYTE_TRANSMITTED) {
+			I2C_SendData(I2C1, eeprom_device_info.buffer[0]);
+			eeprom_device_info.sent_count++;
+
+			eeprom_device_info.state = SEND_DATA;
+			event_compare_failed = false;
+		}
+		break;
+	    }
+	    case SEND_DATA:
+	    {
+		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
+			I2C_SendData(I2C1, eeprom_device_info.buffer[eeprom_device_info.sent_count]);
+
+			if(eeprom_device_info.sent_count == eeprom_device_info.buffer_count) {
+				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+				eeprom_device_info.sent_count = 0;
+				eeprom_device_info.exit_status = I2C_SUCCESS;
+				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+			}
+		}
+		break;
+	    }
+	}
+
+	if(event_compare_failed == true) {
+		//XXX:Unknown error, reset the I2C bus!
+		eeprom_device_info.exit_status = I2C_WRONG_EVENT_FAILED;
+		xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+	}
+
+	portEND_SWITCHING_ISR(higher_priority_task_woken);
 }
 
 static void handle_eeprom_read_request(void)
@@ -79,8 +147,8 @@ static void handle_eeprom_read_request(void)
 	 * 3.Send EEPROM address
 	 * 4.Generate start condition again
 	 * 5.Send I2C device address again
-	 * 4.Receive all datas
-	 * 5.Generate stop condition
+	 * 6.Receive all datas
+	 * 7.Generate stop condition
 	 */
 
 	/* [Detailed Procedure]
@@ -96,7 +164,7 @@ static void handle_eeprom_read_request(void)
 	 * 10.Generate stop condition -> wait for stop event
 	 */
 
-	//Please carefully read the procedure first then read the code below
+	//Please carefully view the procedure first then read the code below
 
 	if(eeprom_device_info.operating_type != EEPROM_DEVICE_READ) {
 		return;
@@ -105,12 +173,14 @@ static void handle_eeprom_read_request(void)
 	uint32_t current_event = I2C_GetLastEvent(I2C1);
 	bool event_compare_failed = true;
 
+	long higher_priority_task_woken = pdFALSE;
+
 	/* I2C Event handler */
 	switch(eeprom_device_info.state) {
 	    case GENERATE_START_CONDITION:
 	    {
 		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
-			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
+			I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
 
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
 			event_compare_failed = false;
@@ -121,9 +191,9 @@ static void handle_eeprom_read_request(void)
 	    {
 		if(current_event == I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED) {
 			I2C_Cmd(I2C1, ENABLE);
-			I2C_SendData(I2C1, eeprom_device_info.word_address);
+			I2C_SendData(I2C1, eeprom_device_info.address);
 
-			eeprom_device_info.state = SEND_EEPROM_ADDRESS;
+			eeprom_device_info.state = SEND_WORD_ADDRESS;
 			event_compare_failed = false;
 		}
 		break;
@@ -141,7 +211,7 @@ static void handle_eeprom_read_request(void)
 	    case GENERATE_START_CONDITION_AGAIN:
 	    {
 		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
-			 I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
+			 I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
 
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
 			event_compare_failed = false;
@@ -151,7 +221,7 @@ static void handle_eeprom_read_request(void)
 	    case SEND_DEVICE_ADDRESS_AGAIN:
 	    {
 		if(current_event == I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED) {
-			*(eeprom_device_info.buffer) = I2C_ReceiveData(I2C1);
+			eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
 			eeprom_device_info.received_count++;
 
 			eeprom_device_info.state = RECEIVE_DATA;
@@ -165,20 +235,26 @@ static void handle_eeprom_read_request(void)
 			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
 			eeprom_device_info.received_count++;
 
-			if(eeprom_device_info.buffer_count == eeprom_device_info.received_count) {
-				eeprom_device_info.operating_type = EEPROM_IDLE;
-				xSemaphoreGiveFromISR(eeprom_sem, I_Dont_Know);
+			if(eeprom_device_info.received_count == eeprom_device_info.buffer_count) {
+				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+				eeprom_device_info.received_count = 0;
+				eeprom_device_info.exit_status = I2C_SUCCESS;
+				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 			}
 
 			event_compare_failed = false;
-			break;
 		}
+		break;
 	    }
 	}
 
 	if(event_compare_failed == true) {
-		//Unknown error, reset the I2C bus!
+		//XXX:Unknown error, reset the I2C bus!
+		eeprom_device_info.exit_status = I2C_WRONG_EVENT_FAILED;
+		xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 	}
+
+	portEND_SWITCHING_ISR(higher_priority_task_woken);
 }
 
 void EEPROM_I2C_IRQ_HANDLER(void)
@@ -195,17 +271,18 @@ void EEPROM_I2C_IRQ_HANDLER(void)
   *	    of the data
   * @retval Operating result
   */
-static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word_address, 
-	int data_count)
+static int eeprom_page_write(uint8_t *data, uint8_t word_address, int data_count)
 {
 	//XXX:Check IDLE state?
 
 	//Wait until I2C is not busy anymore
-	I2C_TIMED(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY));
+	if(i2c_busy_flag_check() != 0) {
+		return I2C_BUSY_FAILED;
+	}
 
 	/* Set EEPROM device information */
 	eeprom_device_info.state = EEPROM_DEVICE_WRITE;
-	eeprom_device_info.address = device_address;
+	eeprom_device_info.address = word_address;
 	eeprom_device_info.buffer = data;
 	eeprom_device_info.buffer_count = data_count;
 
@@ -223,15 +300,16 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
   *	    of the received data
   * @retval Operating result
   */
-static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8_t word_address,
-	int buffer_count)
+static int eeprom_sequential_read(uint8_t *buffer, uint8_t word_address, int buffer_count)
 {
 	//Wait until I2C is not busy anymore
-	I2C_TIMED(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY));
+	if(i2c_busy_flag_check() != 0) {
+		return I2C_BUSY_FAILED;
+	}
 
 	/* Set EEPROM device information */
 	eeprom_device_info.state = EEPROM_DEVICE_READ;
-	eeprom_device_info.address = device_address;
+	eeprom_device_info.address = word_address;
 	eeprom_device_info.buffer = buffer;
 	eeprom_device_info.buffer_count = buffer_count;
 
@@ -292,8 +370,7 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		if(data_left >= page_left_space) {
 			/* Fill the full page by writing data */
 			memcpy(page_buffer, data + (count - data_left), page_left_space);
-			TIMED(eeprom_page_write(page_buffer, device_address, word_address,
-				page_left_space) == I2C_TIMEOUT, eeprom_i2c_restart());
+			TIMED(eeprom_page_write(page_buffer, word_address, page_left_space) != I2C_SUCCESS);
 
 			data_left -= EEPROM_PAGE_SIZE - current_page_write_byte;
 
@@ -303,8 +380,7 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		} else {
 			/* Write the data into current page */
 			memcpy(page_buffer, data + (count - data_left), data_left);
-			TIMED(eeprom_page_write(page_buffer, device_address, word_address,
-				data_left) == I2C_TIMEOUT, eeprom_i2c_restart());
+			TIMED(eeprom_page_write(page_buffer, word_address, data_left) != I2C_SUCCESS);
 
 			/* Increase the EEPROM page offset */
 			current_page_write_byte += data_left;
@@ -358,10 +434,9 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 
 		/* Read the data from the page */
 		if(data_left >= page_left_space) {
-			/* The page is going to be full */
+			/* The page is going to full */
 			
-			TIMED(eeprom_sequential_read(buffer, device_address, word_address, page_left_space)
-				== I2C_TIMEOUT, eeprom_i2c_restart());
+			TIMED(eeprom_sequential_read(buffer, word_address, page_left_space) != I2C_SUCCESS);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, page_left_space);
@@ -373,8 +448,7 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		} else {
 			/* There will be some empty space in this page after the read
 			   operation */
-			TIMED(eeprom_sequential_read(buffer, device_address, word_address, data_left)
-				== I2C_TIMEOUT, eeprom_i2c_restart());
+			TIMED(eeprom_sequential_read(buffer, word_address, data_left) != I2C_SUCCESS);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, data_left);
