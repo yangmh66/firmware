@@ -55,10 +55,10 @@ static void handle_eeprom_write_request(void)
 	/* [Procedure]
 	 * 1.Generate start condition -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
 	 * 2.Send I2C device address -> wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
-	 * 4.Send EEPROM address -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED" 
-	 * 5.Send a byte to EEPROM -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED"
-	 * 6.Loop step 5 until finish sending the data
-	 * 7.Generate stop condition -> wait for stop event
+	 * 3.Send EEPROM address -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED" 
+	 * 4.Send a byte to EEPROM -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED"
+	 * 5.Loop step 4 until finish sending the data
+	 * 6.Generate stop condition -> wait for stop event
 	 */
 
 	//Please carefully view procedure first then read the code below
@@ -72,13 +72,15 @@ static void handle_eeprom_write_request(void)
 
 	long higher_priority_task_woken = pdFALSE;
 
-	/* I2C Event handler */
+	/* I2C Event handler (Step by step) */
 	switch(eeprom_device_info.state) {
 	    case GENERATE_START_CONDITION:
 	    {
 		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
+			//Step2: send I2C device address
 			I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
 
+			/* Update device information */
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
@@ -88,8 +90,10 @@ static void handle_eeprom_write_request(void)
 	    case SEND_DEVICE_ADDRESS: //I2C device address
 	    {
 		if(current_event == I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED) {
+			//Step3: send EEPROM word address
 			I2C_SendData(I2C1, eeprom_device_info.address);
 
+			/* Update device information */
 			eeprom_device_info.state = SEND_WORD_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
@@ -99,9 +103,11 @@ static void handle_eeprom_write_request(void)
 	    case SEND_WORD_ADDRESS: //EEPROM address
 	    {
 		if(current_event == I2C_EVENT_MASTER_BYTE_TRANSMITTED) {
+			//Step4: send first byte to the EEPROM
 			I2C_SendData(I2C1, eeprom_device_info.buffer[0]);
 			eeprom_device_info.sent_count++;
 
+			/* Update device information */
 			eeprom_device_info.state = SEND_DATA;
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
@@ -116,16 +122,20 @@ static void handle_eeprom_write_request(void)
 
 			/* Finish sending all datas */
 			if(eeprom_device_info.sent_count == eeprom_device_info.buffer_count) {
+				//Step6: generate the stop condition
 				I2C_GenerateSTOP(I2C1, ENABLE);
 
+				/* Clear device information */
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
 				eeprom_device_info.sent_count = 0;
 				eeprom_device_info.exit_status = I2C_SUCCESS;
+
 				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 
 				break;
 			}
 
+			//Step4-5: Keep sending the data
 			I2C_SendData(I2C1, eeprom_device_info.buffer[eeprom_device_info.sent_count]);
 			eeprom_device_info.sent_count++;
 		}
@@ -151,7 +161,7 @@ static void handle_eeprom_read_request(void)
 	 * 4.Generate start condition again -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
 	 * 5.Send I2C device address again -> wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
 	 * 6.Read a byte from EEPROM -> wait for event "I2C_EVENT_MASTER_BYTE_RECEIVED"
-	 * 7.Loop step 8 until finish receiving the data
+	 * 7.Loop step 6 until finish receiving the data
 	 * 8.Generate stop condition -> wait for stop event
 	 */
 
@@ -161,18 +171,19 @@ static void handle_eeprom_read_request(void)
 		return;
 	}
 
-	uint32_t current_event = I2C_GetLastEvent(I2C1);
 	bool event_compare_failed = true;
-
 	long higher_priority_task_woken = pdFALSE;
+	uint32_t current_event = I2C_GetLastEvent(I2C1);
 
-	/* I2C Event handler */
+	/* I2C Event handler (Step by step) */
 	switch(eeprom_device_info.state) {
 	    case GENERATE_START_CONDITION:
 	    {
 		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
+			/* Step2 : send I2C device address  */
 			I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
 
+			/* Update device information */
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
@@ -183,8 +194,10 @@ static void handle_eeprom_read_request(void)
 	    {
 		if(current_event == I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED) {
 			I2C_Cmd(I2C1, ENABLE);
+			//Step3: send EEPROM word address
 			I2C_SendData(I2C1, eeprom_device_info.address);
 
+			/* Update device information */
 			eeprom_device_info.state = SEND_WORD_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
@@ -194,8 +207,10 @@ static void handle_eeprom_read_request(void)
 	    case SEND_WORD_ADDRESS: //EEPROM address
 	    {
 		if(current_event == I2C_EVENT_MASTER_BYTE_TRANSMITTED) {
+			//Step4: generate the start condition again
 			I2C_GenerateSTART(I2C1, ENABLE);
 
+			/* Update device information */
 			eeprom_device_info.state = GENERATE_START_CONDITION_AGAIN;
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
@@ -205,8 +220,10 @@ static void handle_eeprom_read_request(void)
 	    case GENERATE_START_CONDITION_AGAIN:
 	    {
 		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
-			 I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
+			//Step5: Send I2C device address again
+			I2C_Send7bitAddress(I2C1, EEPROM_DEVICE_BASE_ADDRESS, I2C_Direction_Transmitter);
 
+			/* Update device information */
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
@@ -216,9 +233,11 @@ static void handle_eeprom_read_request(void)
 	    case SEND_DEVICE_ADDRESS_AGAIN:
 	    {
 		if(current_event == I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED) {
+			//Step6: Receive a byte from EEPROM
 			eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
 			eeprom_device_info.received_count++;
 
+			/* Update device information */
 			eeprom_device_info.state = RECEIVE_DATA;
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
@@ -231,18 +250,23 @@ static void handle_eeprom_read_request(void)
 			eeprom_device_info.timeout_counter = 0;
 			event_compare_failed = false;
 
+			//Finish receiving the last byte
 			if(eeprom_device_info.received_count == eeprom_device_info.buffer_count) {
+				//Step8: generate the stop condition
 				I2C_AcknowledgeConfig(I2C1, DISABLE);
 				I2C_GenerateSTOP(I2C1, ENABLE);
 
+				/* Update device information */
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
 				eeprom_device_info.received_count = 0;
 				eeprom_device_info.exit_status = I2C_SUCCESS;
+
 				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 
 				break;
 			}
 
+			//Step6-7: Keep receiving the data
 			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
 			eeprom_device_info.received_count++;
 		}
@@ -285,12 +309,14 @@ static int eeprom_page_write(uint8_t *data, uint8_t word_address, int data_count
 	uint32_t delay_time = MILLI_SECOND_TICK / I2C_TIMEOUT_COUNT_MAX;
 
 	/* Set EEPROM device information */
-	eeprom_device_info.state = EEPROM_DEVICE_WRITE;
+	eeprom_device_info.operating_type = EEPROM_DEVICE_WRITE;
+	eeprom_device_info.state = GENERATE_START_CONDITION;
 	eeprom_device_info.address = word_address;
 	eeprom_device_info.buffer = data;
 	eeprom_device_info.buffer_count = data_count;
 
-	I2C_GenerateSTART(I2C1, ENABLE);
+	//Step1: generate the start condition
+	I2C_GenerateSTART(I2C1, ENABLE); //Trigger the I2C communication
 
 	/* Trigger I2C interrupt handler to do the job */
 	while (!xSemaphoreTake(eeprom_sem, delay_time)) {
@@ -322,12 +348,14 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t word_address, int buf
 	uint32_t delay_time = MILLI_SECOND_TICK / I2C_TIMEOUT_COUNT_MAX;
 
 	/* Set EEPROM device information */
-	eeprom_device_info.state = EEPROM_DEVICE_READ;
+	eeprom_device_info.operating_type = EEPROM_DEVICE_READ;
+	eeprom_device_info.state = GENERATE_START_CONDITION;
 	eeprom_device_info.address = word_address;
 	eeprom_device_info.buffer = buffer;
 	eeprom_device_info.buffer_count = buffer_count;
 
-	I2C_GenerateSTART(I2C1, ENABLE);
+	//Step1: generate the start condition
+	I2C_GenerateSTART(I2C1, ENABLE); //Trigger the I2C communication
 
 	/* Trigger I2C interrupt handler to do the job */
 	while (!xSemaphoreTake(eeprom_sem, delay_time)) {
