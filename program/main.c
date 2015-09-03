@@ -29,6 +29,7 @@ xTaskHandle eeprom_save_task_handle;
 xTimerHandle xTimers[1];
 extern xSemaphoreHandle serial_tx_wait_sem;
 extern xSemaphoreHandle usart3_dma_send_sem;
+extern xSemaphoreHandle eeprom_sem;
 extern xQueueHandle serial_rx_queue;
 extern xQueueHandle gps_serial_queue;
 
@@ -63,6 +64,7 @@ int main(void)
 	vSemaphoreCreateBinary(serial_tx_wait_sem);
 	vSemaphoreCreateBinary(usart3_dma_send_sem);
 	vSemaphoreCreateBinary(flight_control_sem);
+	vSemaphoreCreateBinary(eeprom_sem);
 
 	serial_rx_queue = xQueueCreate(256, sizeof(serial_msg));
 	gps_serial_queue = xQueueCreate(5, sizeof(serial_msg));
