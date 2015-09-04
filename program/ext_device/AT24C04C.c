@@ -34,20 +34,7 @@ eeprom_device_info_t eeprom_device_info;
 
 static void i2c_bus_reset(void)
 {
-	i2c1_reinit();
-}
-
-static int i2c_busy_flag_check(void)
-{
-	int timeout_counter = 0xFFFF;
-
-	while(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY)) {
-		if((timeout_counter--) == 0) {
-			return 1;
-		}
-	}
-
-	return 0;
+	//i2c1_reinit();
 }
 
 static void handle_eeprom_write_request(void)
@@ -302,7 +289,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t word_address, int data_count
 	//XXX:Check IDLE state?
 
 	//Wait until I2C is not busy anymore
-	if(i2c_busy_flag_check() != 0) {
+	if(i2c_flag_loop_check(I2C1, I2C_FLAG_BUSY, 0xFFFF) != 0) {
 		return I2C_BUSY_FAILED;
 	}
 
@@ -341,7 +328,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t word_address, int data_count
 static int eeprom_sequential_read(uint8_t *buffer, uint8_t word_address, int buffer_count)
 {
 	//Wait until I2C is not busy anymore
-	if(i2c_busy_flag_check() != 0) {
+	if(i2c_flag_loop_check(I2C1, I2C_FLAG_BUSY, 0xFFFF) != 0) {
 		return I2C_BUSY_FAILED;
 	}
 

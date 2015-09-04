@@ -13,6 +13,7 @@ void enable_i2c1(void);
 void enable_i2c2(void);
 void i2c1_reinit(void);
 
+int i2c_flag_loop_check(I2C_TypeDef* i2c_channel, uint32_t flag, int retry_count);
 void i2c1_send(uint8_t *data, int data_count);
 
 #endif

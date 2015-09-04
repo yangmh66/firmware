@@ -130,6 +130,19 @@ void i2c_Init()
 	enable_i2c2();
 }
 
+int i2c_flag_loop_check(I2C_TypeDef* i2c_channel, uint32_t flag, int retry_count)
+{
+	int timeout_counter = retry_count;
+
+	while(I2C_GetFlagStatus(i2c_channel, flag)) {
+		if((timeout_counter--) == 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 void i2c1_send(uint8_t *data, int data_count)
 {
 	DMA_InitTypeDef DMA_InitStructure = {
