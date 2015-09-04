@@ -49,7 +49,8 @@ enum {
 typedef struct {
 	int operating_type; //Check ENUM "EEPROM_Operating_Type"
 	int state; //Check ENUM "EEPROM_Write_Read_State"
-	int address;
+	int device_address;
+	int word_address;
 	uint8_t *buffer;
 	int buffer_count;
 	int sent_count;
