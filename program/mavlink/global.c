@@ -112,14 +112,17 @@ void init_global_data(void)
 		if(parameter_config == true)
 			modifiable_data_cnt++;
 	}
+} 
 
+void init_global_data_with_eeprom(void)
+{
 	load_global_data_from_eeprom();
 
 	if(eeprom_is_written == false)
 		eeprom.clear();
 
 	eeprom_debug_print();
-} 
+}
 
 /**
   * @brief  get the count of global data

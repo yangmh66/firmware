@@ -120,6 +120,7 @@ typedef struct {
 
 /* Global data list operating functions */
 void init_global_data(void);
+void init_global_data_with_eeprom(void);
 int get_global_data_count(void);
 int get_modifiable_data_count(void);
 int set_global_data_value(int index, Type type, Data value);

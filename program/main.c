@@ -82,6 +82,8 @@ int main(void)
 	CAN2_Config();
 	CAN2_NVIC_Config();
 
+	init_global_data();
+
 	/* Register the FreeRTOS task */
 	/* Flight control task */
 	xTaskCreate(
