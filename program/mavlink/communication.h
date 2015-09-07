@@ -7,7 +7,7 @@
 #include "mavlink.h"
 #include "communication.h"
 
-#define BROADCAST_MESSAGE_CNT (sizeof(boradcast_message_list) / sizeof(boradcast_message_list[0]))
+#define BROADCAST_MESSAGE_CNT (sizeof(broadcast_message_list) / sizeof(broadcast_message_list[0]))
 
 #define BROADCAST_MSG_DEF(send_function, tick_time) \
         {.send_message = send_function, .period_tick = tick_time}
