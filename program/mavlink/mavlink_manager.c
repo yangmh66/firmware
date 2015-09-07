@@ -16,7 +16,7 @@
 
 #include "global.h"
 
-#include "communication.h"
+#include "mavlink_manager.h"
 #include "generic.h"
 #include "parameter.h"
 #include "mission.h"

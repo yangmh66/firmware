@@ -1,7 +1,7 @@
 /* Flight stabilizer and controller engine */
 
 #include "flight_controller.h"
-#include "communication.h"
+#include "mavlink_manager.h"
 
 	/* GPS localizer initialization */
 	UBXvelned_t GPS_velocity_NED;

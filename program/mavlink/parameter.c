@@ -4,7 +4,7 @@
 #include "delay.h"
 
 #include "global.h"
-#include "communication.h"
+#include "mavlink_manager.h"
 #include "mission.h"
 #include "parameter.h"
 

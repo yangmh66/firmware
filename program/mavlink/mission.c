@@ -10,7 +10,7 @@
 #include "common.h"
 
 #include "global.h"
-#include "communication.h"
+#include "mavlink_manager.h"
 #include "mission.h"
 #include "system_time.h"
 #include "navigation.h"

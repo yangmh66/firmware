@@ -17,7 +17,7 @@
 #include "timers.h"
 
 #include "global.h"
-#include "communication.h"
+#include "mavlink_manager.h"
 #include "system_time.h"
 #include "lea6h_ubx.h"
 

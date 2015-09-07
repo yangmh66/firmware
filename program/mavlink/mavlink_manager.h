@@ -1,11 +1,10 @@
-#ifndef __COMMUNICATION_H
-#define __COMMUNICATION_H
+#ifndef __MAVLINK_MANAGER_H
+#define __MAVLINK_MANAGER_H
 
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include "mavlink.h"
-#include "communication.h"
 
 #define BROADCAST_MESSAGE_CNT (sizeof(broadcast_message_list) / sizeof(broadcast_message_list[0]))
 
