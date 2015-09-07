@@ -55,7 +55,6 @@ static void handle_eeprom_write_request(void)
 	}
 
 	uint32_t current_event = I2C_GetLastEvent(I2C1);
-	bool event_compare_failed = true;
 
 	long higher_priority_task_woken = pdFALSE;
 
@@ -70,7 +69,6 @@ static void handle_eeprom_write_request(void)
 			/* Update device information */
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 		}
 		break;
 	    }
@@ -83,7 +81,6 @@ static void handle_eeprom_write_request(void)
 			/* Update device information */
 			eeprom_device_info.state = SEND_WORD_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 		}
     		break;
 	    }
@@ -97,7 +94,6 @@ static void handle_eeprom_write_request(void)
 			/* Update device information */
 			eeprom_device_info.state = SEND_DATA;
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 		}
 		break;
 	    }
@@ -105,7 +101,6 @@ static void handle_eeprom_write_request(void)
 	    {
 		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 
 			/* Finish sending all datas */
 			if(eeprom_device_info.sent_count == eeprom_device_info.buffer_count) {
@@ -152,7 +147,6 @@ static void handle_eeprom_read_request(void)
 		return;
 	}
 
-	bool event_compare_failed = true;
 	long higher_priority_task_woken = pdFALSE;
 	uint32_t current_event = I2C_GetLastEvent(I2C1);
 
@@ -167,7 +161,6 @@ static void handle_eeprom_read_request(void)
 			/* Update device information */
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 		}
 		break;
 	    }
@@ -181,7 +174,6 @@ static void handle_eeprom_read_request(void)
 			/* Update device information */
 			eeprom_device_info.state = SEND_WORD_ADDRESS;
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 		}
 		break;
 	    }
@@ -194,7 +186,6 @@ static void handle_eeprom_read_request(void)
 			/* Update device information */
 			eeprom_device_info.state = GENERATE_START_CONDITION_AGAIN;
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 		}
 		break;
 	    }
@@ -207,7 +198,6 @@ static void handle_eeprom_read_request(void)
 			/* Update device information */
 			eeprom_device_info.state = SEND_DEVICE_ADDRESS_AGAIN;
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 		}
 		break;
 	    }
@@ -222,7 +212,6 @@ static void handle_eeprom_read_request(void)
 			/* Update device information */
 			eeprom_device_info.state = RECEIVE_DATA;
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 		}
 		break;
 	    }
@@ -230,7 +219,6 @@ static void handle_eeprom_read_request(void)
 	    {
 		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
 			eeprom_device_info.timeout_counter = 0;
-			event_compare_failed = false;
 
 			//Step6-7: Keep receiving the data
 			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
