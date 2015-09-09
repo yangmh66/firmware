@@ -4,6 +4,8 @@
 #include "AT24C04C.h"
 #include "delay.h"
 
+#include <FreeRTOS.h>
+
 /* I2C Timeout exception */
 typedef enum {I2C_SUCCESS, I2C_TIMEOUT} I2C_Status;
 int i2c_timeout;
@@ -76,7 +78,9 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
 	/* Wait to make sure that STOP control bit has been cleared */
 	I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
 
-	Delay_1us(5000);
+	//Choose one line to compile, Ming
+	vTaskDelay(configTICK_RATE_HZ / 1000000 * 50);
+//	Delay_1us(5000 * 10);
 
 	/* Restart the I2C */
 	I2C_AcknowledgeConfig(I2C1, DISABLE);
