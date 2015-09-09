@@ -295,7 +295,6 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 		eeprom_device_info.timeout_counter++;
 	}
 
-	I2C_AcknowledgeConfig(I2C1, DISABLE);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
 	return eeprom_device_info.exit_status;
@@ -340,7 +339,6 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 		eeprom_device_info.timeout_counter++;
 	}
 
-	I2C_AcknowledgeConfig(I2C1, DISABLE);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
 	return eeprom_device_info.exit_status;
