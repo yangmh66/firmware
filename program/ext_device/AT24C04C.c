@@ -167,7 +167,7 @@ static void handle_eeprom_read_request(void)
 	    case SEND_DEVICE_ADDRESS: //I2C device address
 	    {
 		if(current_event == I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED) {
-			//I2C_Cmd(I2C1, ENABLE);
+			I2C_Cmd(I2C1, ENABLE);
 			//Step3: send EEPROM word address
 			I2C_SendData(I2C1, eeprom_device_info.word_address);
 
@@ -264,6 +264,9 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 	int data_count)
 {
 	//XXX:Check IDLE state?
+	if(eeprom_device_info.operating_type != EEPROM_DEVICE_IDLE) {
+		while(1); //Debug code
+	}
 
 	//Wait until I2C is not busy anymore
 	if(i2c_flag_loop_check(I2C1, I2C_FLAG_BUSY, 0xFFFF) != 0) {
@@ -309,6 +312,10 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8_t word_address,
 	int buffer_count)
 {
+	if(eeprom_device_info.operating_type != EEPROM_DEVICE_IDLE) {
+		while(1); //Debug code
+	}
+
 	//Wait until I2C is not busy anymore
 	if(i2c_flag_loop_check(I2C1, I2C_FLAG_BUSY, 0xFFFF) != 0) {
 		return I2C_BUSY_FAILED;
