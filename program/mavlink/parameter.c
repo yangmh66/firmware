@@ -2,6 +2,7 @@
 #include "task.h"
 
 #include "delay.h"
+#include "io.h"
 
 #include "global.h"
 #include "mavlink_manager.h"
