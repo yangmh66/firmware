@@ -1,5 +1,8 @@
 #include <stdbool.h>
 
+#include "gpio.h"
+#include "led.h"
+
 #include "AT24C04C.h"
 
 #include "FreeRTOS.h"
@@ -71,8 +74,13 @@ void eeprom_save_task(void)
 			bool parameter_config;
 			get_global_data_parameter_config_status(i, &parameter_config);
 
-			if(parameter_config == true)
+			if(parameter_config == true) {
+				LED_OFF(TOGGLE_DEBUG);
+
 				save_global_data_into_eeprom(i);
+
+				LED_ON(TOGGLE_DEBUG);
+			}
 		}
 
 		uint8_t global_data_count = get_global_data_count();
