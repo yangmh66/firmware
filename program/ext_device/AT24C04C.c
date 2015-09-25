@@ -192,13 +192,17 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
   
 	while(buffer_count) {
+
 		if(buffer_count == 1) {
 			/* Disable Acknowledgement */
 			I2C_AcknowledgeConfig(I2C1, DISABLE);
- 
+			I2C1->SR2;
 			/* Send STOP Condition */
 			I2C_GenerateSTOP(I2C1, ENABLE);
+
 		}
+
+
 
 		/* Test on EV7 and clear it */
 		I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED));
@@ -212,12 +216,11 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 		/* Decrement the read bytes counter */
 		buffer_count--;
 
-		/* Wait to make sure that STOP control bit has been cleared */
-		I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
 	}
-
-	I2C_AcknowledgeConfig(I2C1, DISABLE);
+	/* Wait to make sure that STOP control bit has been cleared */
+	I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
+
 
 	return I2C_SUCCESS;;
 }
