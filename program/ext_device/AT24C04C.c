@@ -3,6 +3,8 @@
 #include "i2c.h"
 #include "AT24C04C.h"
 #include "delay.h"
+void DMA1_Stream7_IRQHandler(void);
+void I2C1_EV_IRQHandler(void);
 
 /* I2C Timeout exception */
 typedef enum {I2C_SUCCESS, I2C_TIMEOUT} I2C_Status;
@@ -36,6 +38,32 @@ static void eeprom_i2c_restart(void)
 	i2c1_reinit();
 }
 
+void i2c_dma_send(uint8_t *data, uint32_t count)
+{
+	
+
+	DMA_InitTypeDef i2c_init_struct;
+	i2c_init_struct.DMA_Channel = EEPROM_DMA_CHANNEL;
+  	i2c_init_struct.DMA_PeripheralBaseAddr = EEPROM_I2C_DR_ADDR;
+  	i2c_init_struct.DMA_Memory0BaseAddr = (uint32_t)data;    /* This parameter will be configured durig communication */;
+  	i2c_init_struct.DMA_DIR = DMA_DIR_MemoryToPeripheral; /* This parameter will be configured durig communication */
+  	i2c_init_struct.DMA_BufferSize = count;              /* This parameter will be configured durig communication */
+  	i2c_init_struct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  	i2c_init_struct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  	i2c_init_struct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+  	i2c_init_struct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+  	i2c_init_struct.DMA_Mode = DMA_Mode_Normal;
+  	i2c_init_struct.DMA_Priority = DMA_Priority_VeryHigh;
+  	i2c_init_struct.DMA_FIFOMode = DMA_FIFOMode_Enable;
+  	i2c_init_struct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+  	i2c_init_struct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+  	i2c_init_struct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+  	DMA_Init(EEPROM_DMA_STREAM, &i2c_init_struct);
+  	DMA_Cmd(EEPROM_DMA_STREAM, ENABLE);
+  	I2C_DMACmd(I2C1, ENABLE);
+  	//while (DMA_GetFlagStatus(EEPROM_DMA_STREAM, EEPROM_TX_DMA_FLAG_TCIF) == RESET);
+
+}
 static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word_address, 
 	int data_count)
 {
@@ -57,31 +85,10 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
 	I2C_SendData(I2C1, word_address);  
 
 	/* Test on I2C EV8 and clear it */
-	I2C_TIMED(! I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+	I2C_TIMED(! I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTING));
 
-	while(data_count--) {
-		/* Send the current byte */
-		I2C_SendData(I2C1, *data); 
-
-		/* Point to the next byte to be written */
-		data++; 
-  
-		/* Test on I2C EV8 and clear it */
-		I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
-	}
-
-	/* Send the I2C stop condition */
-	I2C_GenerateSTOP(I2C1, ENABLE);
-
-	/* Wait to make sure that STOP control bit has been cleared */
-	I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
-
+	i2c_dma_send(data, data_count);
 	Delay_1us(5000);
-
-	/* Restart the I2C */
-	I2C_AcknowledgeConfig(I2C1, DISABLE);
-	I2C_AcknowledgeConfig(I2C1, ENABLE);
-
 	return I2C_SUCCESS;
 }
 
@@ -131,8 +138,8 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		if(data_left >= page_left_space) {
 			/* Fill the full page by writing data */
 			memcpy(page_buffer, data + (count - data_left), page_left_space);
-			TIMED(eeprom_page_write(page_buffer, device_address, word_address,
-				page_left_space) == I2C_TIMEOUT, eeprom_i2c_restart());
+			eeprom_page_write(page_buffer, device_address, word_address,
+				page_left_space);
 
 			data_left -= EEPROM_PAGE_SIZE - current_page_write_byte;
 
@@ -142,8 +149,8 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		} else {
 			/* Write the data into current page */
 			memcpy(page_buffer, data + (count - data_left), data_left);
-			TIMED(eeprom_page_write(page_buffer, device_address, word_address,
-				data_left) == I2C_TIMEOUT, eeprom_i2c_restart());
+			eeprom_page_write(page_buffer, device_address, word_address,
+				data_left);
 
 			/* Increase the EEPROM page offset */
 			current_page_write_byte += data_left;
@@ -221,7 +228,7 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 	I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
-
+	Delay_1us(5000);
 	return I2C_SUCCESS;;
 }
 
@@ -271,8 +278,7 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		if(data_left >= page_left_space) {
 			/* The page is going to be full */
 			
-			TIMED(eeprom_sequential_read(buffer, device_address, word_address, page_left_space)
-				== I2C_TIMEOUT, eeprom_i2c_restart());
+			eeprom_sequential_read(buffer, device_address, word_address, page_left_space);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, page_left_space);
@@ -284,8 +290,7 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		} else {
 			/* There will be some empty space in this page after the read
 			   operation */
-			TIMED(eeprom_sequential_read(buffer, device_address, word_address, data_left)
-				== I2C_TIMEOUT, eeprom_i2c_restart());
+			eeprom_sequential_read(buffer, device_address, word_address, data_left);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, data_left);
@@ -304,25 +309,49 @@ void eeprom_clear(void)
 	uint8_t buffer[1024] = {'\0'};
 	eeprom.write(buffer, 0, 1024);
 }
+
+void DMA1_Stream7_IRQHandler(void)
+{
+	if(DMA_GetFlagStatus(EEPROM_DMA_STREAM, EEPROM_TX_DMA_FLAG_TCIF) != RESET) {
+ 
+  		DMA_Cmd(EEPROM_DMA_STREAM, DISABLE);
+  		DMA_ClearFlag(EEPROM_DMA_STREAM, EEPROM_TX_DMA_FLAG_TCIF);
+		I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
+  	}
+}
+void I2C1_EV_IRQHandler(void)
+{
+	if(I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF) !=RESET) {
+
+		I2C_GenerateSTOP(I2C1, ENABLE);
+		I2C_ITConfig(I2C1, I2C_IT_EVT, DISABLE);
+	}
+}
 void test_eeprom()
 {
 	char *str = "hellow world";
 	uint16_t size = strlen(str);
 	uint16_t addr = 0;
 	int16_t i = 0;
-	for (i = 0; i<100; i++) {
+	uint16_t err_count=0;
+
+	eeprom.clear();
+
+	for (i = 0; i<10; i++) {
 		eeprom.write((uint8_t * )str, addr, size);
-		addr = addr +size;
+		addr = addr + size;
 	}
 
 	char input_str[20];
 	
 	addr = 0;
-	for (i = 0; i<100; i++) {
+	for (i = 0; i<10; i++) {
 		eeprom.read((uint8_t * )input_str, addr, size);
-		if( strcmp(str, input_str) != 0 )
+		if( strcmp(str, input_str) != 0 ) {
 			printf("ADDR:%u has problem!\r\n", addr);
+			err_count++;
+		}
 		addr = addr+ size;
 	}
-	printf("finish eeprom testing\r\n");
+	printf("finish eeprom testing. We have %u wrong sentences.\r\n", err_count);
 }

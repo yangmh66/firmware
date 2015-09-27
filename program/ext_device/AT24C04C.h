@@ -18,4 +18,8 @@ enum {
 	EEPROM_BUFFER_OVERFLOW
 } EEPROM_Exit_Status;
 
+#define EEPROM_DMA_CHANNEL DMA_Channel_1
+#define EEPROM_DMA_STREAM DMA1_Stream7
+#define EEPROM_I2C_DR_ADDR (uint32_t)(&(I2C1->DR))
+#define EEPROM_TX_DMA_FLAG_TCIF DMA_FLAG_TCIF7
 #endif

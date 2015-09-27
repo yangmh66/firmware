@@ -1,17 +1,17 @@
 #include "stm32f4xx_conf.h"	
 #include "i2c.h"
 #include "AT24C04C.h"
-
 #include "global.h"
-
+#include "FreeRTOS.h"
 void enable_i2c1()
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
-
+	NVIC_InitTypeDef NVIC_InitStructure;
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
 
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-	
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
+
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_I2C1);
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_I2C1);
 	/* SCL = PB8 SDA = PB9 */
@@ -37,10 +37,30 @@ void enable_i2c1()
 	I2C_InitStruct.I2C_OwnAddress1 = 0x0A;
 	I2C_InitStruct.I2C_Ack = I2C_Ack_Enable;
 	I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	I2C_Init(I2C1, &I2C_InitStruct);
 
+	/* Configure and enable I2C Event Interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel = I2C1_EV_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	I2C_ITConfig(I2C1, I2C_IT_EVT, DISABLE);
+
+	//enalbe dma and interrupt
+  	
+
+	/* Configure and enable I2C DMA TX Channel interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel = DMA1_Stream7_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+	DMA_Cmd(EEPROM_DMA_STREAM, DISABLE);
+	DMA_DeInit(EEPROM_DMA_STREAM);
+	DMA_ClearFlag(EEPROM_DMA_STREAM, EEPROM_TX_DMA_FLAG_TCIF);
+	DMA_ITConfig(EEPROM_DMA_STREAM, DMA_IT_TC, ENABLE);
 	I2C_AcknowledgeConfig(I2C1,ENABLE);
 	I2C_Cmd(I2C1, ENABLE);
+	I2C_Init(I2C1, &I2C_InitStruct);
 } 
 
 void enable_i2c2()
