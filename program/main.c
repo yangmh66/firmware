@@ -81,8 +81,9 @@ int main(void)
 	CAN2_NVIC_Config();
 
 	/* Global data initialazition */
-	init_global_data();
-
+	//init_global_data();
+	test_eeprom();
+	while(1);
 	/* Register the FreeRTOS task */
 	/* Flight control task */
 	xTaskCreate(

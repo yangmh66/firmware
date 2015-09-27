@@ -304,3 +304,25 @@ void eeprom_clear(void)
 	uint8_t buffer[1024] = {'\0'};
 	eeprom.write(buffer, 0, 1024);
 }
+void test_eeprom()
+{
+	char *str = "hellow world";
+	uint16_t size = strlen(str);
+	uint16_t addr = 0;
+	int16_t i = 0;
+	for (i = 0; i<100; i++) {
+		eeprom.write((uint8_t * )str, addr, size);
+		addr = addr +size;
+	}
+
+	char input_str[20];
+	
+	addr = 0;
+	for (i = 0; i<100; i++) {
+		eeprom.read((uint8_t * )input_str, addr, size);
+		if( strcmp(str, input_str) != 0 )
+			printf("ADDR:%u has problem!\r\n", addr);
+		addr = addr+ size;
+	}
+	printf("finish eeprom testing\r\n");
+}
