@@ -38,12 +38,13 @@ static void eeprom_i2c_restart(void)
 	i2c1_reinit();
 }
 
-void i2c_dma_send(uint8_t *data, uint32_t count)
+void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
 {
-	
+	//check TCIF bit. It should be RESET when we ask new DMA request.
+	I2C_TIMED( DMA_GetFlagStatus(EEPROM_DMA_TX_STREAM, EEPROM_TX_DMA_FLAG_TCIF) == SET);
 
 	DMA_InitTypeDef i2c_init_struct;
-	i2c_init_struct.DMA_Channel = EEPROM_DMA_CHANNEL;
+	i2c_init_struct.DMA_Channel = EEPROM_DMA_TX_CHANNEL;
   	i2c_init_struct.DMA_PeripheralBaseAddr = EEPROM_I2C_DR_ADDR;
   	i2c_init_struct.DMA_Memory0BaseAddr = (uint32_t)data;    /* This parameter will be configured durig communication */;
   	i2c_init_struct.DMA_DIR = DMA_DIR_MemoryToPeripheral; /* This parameter will be configured durig communication */
@@ -54,14 +55,42 @@ void i2c_dma_send(uint8_t *data, uint32_t count)
   	i2c_init_struct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
   	i2c_init_struct.DMA_Mode = DMA_Mode_Normal;
   	i2c_init_struct.DMA_Priority = DMA_Priority_VeryHigh;
-  	i2c_init_struct.DMA_FIFOMode = DMA_FIFOMode_Enable;
+  	i2c_init_struct.DMA_FIFOMode = DMA_FIFOMode_Disable;
   	i2c_init_struct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
   	i2c_init_struct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
   	i2c_init_struct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-  	DMA_Init(EEPROM_DMA_STREAM, &i2c_init_struct);
-  	DMA_Cmd(EEPROM_DMA_STREAM, ENABLE);
+  	DMA_Init(EEPROM_DMA_TX_STREAM, &i2c_init_struct);
+  	DMA_Cmd(EEPROM_DMA_TX_STREAM, ENABLE);
   	I2C_DMACmd(I2C1, ENABLE);
-  	//while (DMA_GetFlagStatus(EEPROM_DMA_STREAM, EEPROM_TX_DMA_FLAG_TCIF) == RESET);
+
+}
+
+void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
+{
+	//check TCIF bit. It should be RESET when we ask new DMA request.
+	I2C_TIMED( DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) == SET);
+
+	DMA_InitTypeDef i2c_init_struct;
+	i2c_init_struct.DMA_Channel = EEPROM_DMA_RX_CHANNEL;
+  	i2c_init_struct.DMA_PeripheralBaseAddr = EEPROM_I2C_DR_ADDR;
+  	i2c_init_struct.DMA_Memory0BaseAddr = (uint32_t)data;    /* This parameter will be configured durig communication */;
+  	i2c_init_struct.DMA_DIR = DMA_DIR_PeripheralToMemory; /* This parameter will be configured durig communication */
+  	i2c_init_struct.DMA_BufferSize = count;              /* This parameter will be configured durig communication */
+  	i2c_init_struct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  	i2c_init_struct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  	i2c_init_struct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+  	i2c_init_struct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+  	i2c_init_struct.DMA_Mode = DMA_Mode_Normal;
+  	i2c_init_struct.DMA_Priority = DMA_Priority_VeryHigh;
+  	i2c_init_struct.DMA_FIFOMode = DMA_FIFOMode_Disable;
+  	i2c_init_struct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+  	i2c_init_struct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+  	i2c_init_struct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+  	DMA_Init(EEPROM_DMA_RX_STREAM, &i2c_init_struct);
+ 	I2C_DMALastTransferCmd(I2C1, ENABLE);
+  	DMA_Cmd(EEPROM_DMA_RX_STREAM, ENABLE);
+  	I2C_DMACmd(I2C1, ENABLE);
+  	
 
 }
 static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word_address, 
@@ -87,7 +116,7 @@ static I2C_Status eeprom_page_write(uint8_t *data, uint8_t device_address, uint8
 	/* Test on I2C EV8 and clear it */
 	I2C_TIMED(! I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTING));
 
-	i2c_dma_send(data, data_count);
+	i2c1_dma_tx_setup(data, data_count);
 	Delay_1us(5000);
 	return I2C_SUCCESS;
 }
@@ -163,6 +192,8 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8_t word_address,
 	int buffer_count)
 {
+	I2C_AcknowledgeConfig(I2C1,ENABLE);
+
 	I2C_TIMED(I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY));
  
 	/* Send the I2C start condition */
@@ -198,35 +229,26 @@ static I2C_Status eeprom_sequential_read(uint8_t *buffer, uint8_t device_address
 	/* Test on I2C EV6 and clear it */
 	I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
   
-	while(buffer_count) {
-
-		if(buffer_count == 1) {
-			/* Disable Acknowledgement */
-			I2C_AcknowledgeConfig(I2C1, DISABLE);
-			I2C1->SR2;
-			/* Send STOP Condition */
-			I2C_GenerateSTOP(I2C1, ENABLE);
-
-		}
-
-
+	if(buffer_count < 2) {
+		/* Disable Acknowledgement */
+		I2C_AcknowledgeConfig(I2C1, DISABLE);
+		I2C1->SR2;
+		/* Send STOP Condition */
+		I2C_GenerateSTOP(I2C1, ENABLE);
 
 		/* Test on EV7 and clear it */
 		I2C_TIMED(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED));
-		
+
 		/* Read a byte from the EEPROM */
 		*buffer = I2C_ReceiveData(I2C1);
 
-		/* Point to the next location where the byte read will be saved */
-		buffer++;
+		/* Wait to make sure that STOP control bit has been cleared */
+		I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
+		I2C_AcknowledgeConfig(I2C1, ENABLE);
+	} else {
 
-		/* Decrement the read bytes counter */
-		buffer_count--;
-
+		i2c1_dma_rx_setup(buffer, buffer_count);
 	}
-	/* Wait to make sure that STOP control bit has been cleared */
-	I2C_TIMED(I2C1->CR1 & I2C_CR1_STOP);
-	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
 	Delay_1us(5000);
 	return I2C_SUCCESS;;
@@ -312,11 +334,21 @@ void eeprom_clear(void)
 
 void DMA1_Stream7_IRQHandler(void)
 {
-	if(DMA_GetFlagStatus(EEPROM_DMA_STREAM, EEPROM_TX_DMA_FLAG_TCIF) != RESET) {
+	if(DMA_GetFlagStatus(EEPROM_DMA_TX_STREAM, EEPROM_TX_DMA_FLAG_TCIF) != RESET) {
  
-  		DMA_Cmd(EEPROM_DMA_STREAM, DISABLE);
-  		DMA_ClearFlag(EEPROM_DMA_STREAM, EEPROM_TX_DMA_FLAG_TCIF);
+  		DMA_Cmd(EEPROM_DMA_TX_STREAM, DISABLE);
+  		DMA_ClearFlag(EEPROM_DMA_TX_STREAM, EEPROM_TX_DMA_FLAG_TCIF);
 		I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
+  	}
+}
+
+void DMA1_Stream0_IRQHandler(void)
+{
+	if(DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) != RESET) {
+		
+    		I2C_GenerateSTOP(I2C1, ENABLE);
+    		DMA_Cmd(EEPROM_DMA_RX_STREAM, DISABLE);
+    		DMA_ClearFlag(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF);
   	}
 }
 void I2C1_EV_IRQHandler(void)
@@ -337,7 +369,7 @@ void test_eeprom()
 
 	eeprom.clear();
 
-	for (i = 0; i<10; i++) {
+	for (i = 0; i<50; i++) {
 		eeprom.write((uint8_t * )str, addr, size);
 		addr = addr + size;
 	}
@@ -345,7 +377,7 @@ void test_eeprom()
 	char input_str[20];
 	
 	addr = 0;
-	for (i = 0; i<10; i++) {
+	for (i = 0; i<50; i++) {
 		eeprom.read((uint8_t * )input_str, addr, size);
 		if( strcmp(str, input_str) != 0 ) {
 			printf("ADDR:%u has problem!\r\n", addr);
