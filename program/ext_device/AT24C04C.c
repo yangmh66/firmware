@@ -204,6 +204,12 @@ static void handle_eeprom_read_request(void)
 	    case SEND_DEVICE_ADDRESS_AGAIN:
 	    {
 		if(current_event == I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED) {
+			//Disalbe acknowledgement and generate stop condition before receiving last byte
+			if((eeprom_device_info.received_count + 1) == eeprom_device_info.buffer_count) {
+				I2C_AcknowledgeConfig(I2C1, DISABLE);
+				I2C_GenerateSTOP(I2C1, ENABLE);
+			}
+
 			/* Update device information */
 			eeprom_device_info.state = RECEIVE_DATA;
 			eeprom_device_info.timeout_counter = 0;
@@ -216,19 +222,18 @@ static void handle_eeprom_read_request(void)
 		if(current_event == (I2C_EVENT_MASTER_BYTE_RECEIVED | 0x4)) {
 			eeprom_device_info.timeout_counter = 0;
 
-			//Disalbe acknowledgement and generate stop condition before receiving last byte
-			if((eeprom_device_info.received_count + 1) == eeprom_device_info.buffer_count) {
-				I2C_AcknowledgeConfig(I2C1, DISABLE);
-			}
-
 			//Step6-7: Keep receiving the data
 			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
 			eeprom_device_info.received_count++;
 
+			//Disalbe acknowledgement and generate stop condition before receiving last byte
+			if((eeprom_device_info.received_count + 1) == eeprom_device_info.buffer_count) {
+				I2C_AcknowledgeConfig(I2C1, DISABLE);
+				I2C_GenerateSTOP(I2C1, ENABLE);
+			}
+
 			//Finish receiving last byte
 			if(eeprom_device_info.received_count == eeprom_device_info.buffer_count) {
-				I2C_GenerateSTOP(I2C1, ENABLE);
-
 				/* Update device information */
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
 				eeprom_device_info.exit_status = I2C_SUCCESS;
