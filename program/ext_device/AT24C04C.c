@@ -212,8 +212,8 @@ static void handle_eeprom_read_request(void)
 	    }
 	    case RECEIVE_DATA:
 	    {
-		//FIXME:Should be 0x30040 which refer to I2C_EVENT_MASTER_RECEIVED!
-		if(current_event == 0x30044) {
+		//FIXME:BTF flag...
+		if(current_event == (I2C_EVENT_MASTER_BYTE_RECEIVED | 0x4)) {
 			eeprom_device_info.timeout_counter = 0;
 
 			//Disalbe acknowledgement and generate stop condition before receiving last byte
