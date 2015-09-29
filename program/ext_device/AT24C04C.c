@@ -204,22 +204,26 @@ static void handle_eeprom_read_request(void)
 	    case SEND_DEVICE_ADDRESS_AGAIN:
 	    {
 		if(current_event == I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED) {
-			//Disalbe acknowledgement and generate stop condition before receiving last byte
+			//Prepare to receive the last data
 			if((eeprom_device_info.received_count + 1) == eeprom_device_info.buffer_count) {
+				//Setup NACK bit and Stop condition bit
 				I2C_AcknowledgeConfig(I2C1, DISABLE);
 				I2C_GenerateSTOP(I2C1, ENABLE);
+
+				//Jump to the last byte case
+				eeprom_device_info.state = RECEIVE_LAST_DATA;
+			} else {
+				//Receive n-1 bytes
+				eeprom_device_info.state = RECEIVE_DATA;
 			}
 
-			/* Update device information */
-			eeprom_device_info.state = RECEIVE_DATA;
 			eeprom_device_info.timeout_counter = 0;
 		}
 		break;
 	    }
 	    case RECEIVE_DATA:
 	    {
-		//FIXME:BTF flag...
-		if(current_event == (I2C_EVENT_MASTER_BYTE_RECEIVED | 0x4)) {
+		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
 			eeprom_device_info.timeout_counter = 0;
 
 			//Step6-7: Keep receiving the data
@@ -230,18 +234,26 @@ static void handle_eeprom_read_request(void)
 			if((eeprom_device_info.received_count + 1) == eeprom_device_info.buffer_count) {
 				I2C_AcknowledgeConfig(I2C1, DISABLE);
 				I2C_GenerateSTOP(I2C1, ENABLE);
+
+				eeprom_device_info.state = RECEIVE_LAST_DATA; //Ready to receive the last byte!
 			}
 
-			//Finish receiving last byte
-			if(eeprom_device_info.received_count == eeprom_device_info.buffer_count) {
-				/* Update device information */
-				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-				eeprom_device_info.exit_status = I2C_SUCCESS;
+		}
+		break;
+	    }
+	    case RECEIVE_LAST_DATA:
+	    {
+		if(current_event == (I2C_EVENT_MASTER_BYTE_RECEIVED | 0x4)) {
+			eeprom_device_info.timeout_counter = 0;
 
-				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+			//Step6-7: Keep receiving the data
+			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
 
-				break;
-			}
+			/* Update device information */
+			eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+			eeprom_device_info.exit_status = I2C_SUCCESS;
+
+			xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 		}
 		break;
 	    }

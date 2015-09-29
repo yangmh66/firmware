@@ -43,6 +43,7 @@ enum {
 	GENERATE_START_CONDITION_AGAIN, //For read only
 	SEND_DEVICE_ADDRESS_AGAIN, //For read only
 	RECEIVE_DATA, //For read only
+	RECEIVE_LAST_DATA, //FOr read only
 	SEND_DATA //For write only
 } EEPROM_Write_Read_Event;
 
