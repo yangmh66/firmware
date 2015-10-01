@@ -204,50 +204,29 @@ static void handle_eeprom_read_request(void)
 	    case SEND_DEVICE_ADDRESS_AGAIN:
 	    {
 		if(current_event == I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED) {
-			//Prepare to receive the last data
-			if((eeprom_device_info.received_count + 1) == eeprom_device_info.buffer_count) {
+			//1 byte receive method
+			if(eeprom_device_info.buffer_count == 1) {
 				//Setup NACK bit and Stop condition bit
 				I2C_AcknowledgeConfig(I2C1, DISABLE);
 				I2C_GenerateSTOP(I2C1, ENABLE);
 
 				//Jump to the last byte case
-				eeprom_device_info.state = RECEIVE_LAST_DATA;
+				eeprom_device_info.state = RECEIVE_ONE_BYTE_DATA;
 			} else {
-				//Receive n-1 bytes
-				eeprom_device_info.state = RECEIVE_DATA;
+				//TODO:DMA
 			}
 
 			eeprom_device_info.timeout_counter = 0;
 		}
 		break;
 	    }
-	    case RECEIVE_DATA:
-	    {
-		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
-			eeprom_device_info.timeout_counter = 0;
-
-			//Step6-7: Keep receiving the data
-			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
-			eeprom_device_info.received_count++;
-
-			//Disalbe acknowledgement and generate stop condition before receiving last byte
-			if((eeprom_device_info.received_count + 1) == eeprom_device_info.buffer_count) {
-				I2C_AcknowledgeConfig(I2C1, DISABLE);
-				I2C_GenerateSTOP(I2C1, ENABLE);
-
-				eeprom_device_info.state = RECEIVE_LAST_DATA; //Ready to receive the last byte!
-			}
-
-		}
-		break;
-	    }
-	    case RECEIVE_LAST_DATA:
+	    case RECEIVE_ONE_BYTE_DATA:
 	    {
 		if(current_event == (I2C_EVENT_MASTER_BYTE_RECEIVED | 0x4)) {
 			eeprom_device_info.timeout_counter = 0;
 
-			//Step6-7: Keep receiving the data
-			eeprom_device_info.buffer[eeprom_device_info.received_count] = I2C_ReceiveData(I2C1);
+			//Receive a byte
+			eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
 
 			/* Update device information */
 			eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
@@ -323,7 +302,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
   *	    of the received data
   * @retval Operating result
   */
-static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8_t word_address,
+int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8_t word_address,
 	int buffer_count)
 {
 	if(eeprom_device_info.operating_type != EEPROM_DEVICE_IDLE) {
