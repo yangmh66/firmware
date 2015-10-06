@@ -55,7 +55,6 @@ typedef struct {
 	int buffer_count;
 	int sent_count;
 	int received_count;
-	int timeout_counter;
 	int exit_status; //Check ENUM "EEPROM_Exit_Status"
 } eeprom_device_info_t;
 
