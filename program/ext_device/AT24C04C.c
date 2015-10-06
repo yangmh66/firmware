@@ -195,31 +195,21 @@ static void handle_eeprom_read_request(void)
 	    case SEND_DEVICE_ADDRESS_AGAIN:
 	    {
 		if(current_event == I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED) {
-			//1 byte receive method
+			//1 byte receive reception
 			if(eeprom_device_info.buffer_count == 1) {
 				//Setup NACK bit and Stop condition bit
 				I2C_AcknowledgeConfig(I2C1, DISABLE);
 				I2C_GenerateSTOP(I2C1, ENABLE);
 
-				//Jump to the last byte case
-				eeprom_device_info.state = RECEIVE_ONE_BYTE_DATA;
-			} else {
-				//TODO:DMA
+				//For 1 byte reception, the byte should be received in EV6(I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)
+				eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
+
+				/* Update device information */
+				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+				eeprom_device_info.exit_status = I2C_SUCCESS;
+
+				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 			}
-		}
-		break;
-	    }
-	    case RECEIVE_ONE_BYTE_DATA:
-	    {
-		if(current_event == (I2C_EVENT_MASTER_BYTE_RECEIVED | 0x4)) {
-			//Receive a byte
-			eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
-
-			/* Update device information */
-			eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-			eeprom_device_info.exit_status = I2C_SUCCESS;
-
-			xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 		}
 		break;
 	    }
