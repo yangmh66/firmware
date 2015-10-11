@@ -54,15 +54,13 @@ static void handle_eeprom_write_request(void)
 		return;
 	}
 
-	uint32_t current_event = I2C_GetLastEvent(I2C1);
-
 	long higher_priority_task_woken = pdFALSE;
 
 	/* I2C Event handler (Step by step) */
 	switch(eeprom_device_info.state) {
 	    case GENERATE_START_CONDITION:
 	    {
-		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) {
 			//Step2: send I2C device address
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
 
@@ -73,7 +71,7 @@ static void handle_eeprom_write_request(void)
 	    }
 	    case SEND_DEVICE_ADDRESS: //I2C device address
 	    {
-		if(current_event == I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
 			//Step3: send EEPROM word address
 			I2C_SendData(I2C1, eeprom_device_info.word_address);
 
@@ -84,7 +82,7 @@ static void handle_eeprom_write_request(void)
 	    }
 	    case SEND_WORD_ADDRESS: //EEPROM address
 	    {
-		if(current_event == I2C_EVENT_MASTER_BYTE_TRANSMITTED) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) {
 			//Step4: send first byte to the EEPROM
 			I2C_SendData(I2C1, eeprom_device_info.buffer[0]);
 			eeprom_device_info.sent_count++;
@@ -96,7 +94,7 @@ static void handle_eeprom_write_request(void)
 	    }
 	    case SEND_DATA:
 	    {
-		if(current_event == I2C_EVENT_MASTER_BYTE_RECEIVED) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED)) {
 			/* Finish sending all datas */
 			if(eeprom_device_info.sent_count == eeprom_device_info.buffer_count) {
 				//Step6: generate the stop condition
