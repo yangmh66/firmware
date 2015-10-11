@@ -197,16 +197,17 @@ static void handle_eeprom_read_request(void)
 			//1 byte receive reception
 			if(eeprom_device_info.buffer_count == 1) {
 				//Setup NACK bit during EV6
-				I2C_ReadRegister(I2C1, I2C_Register_SR1);
 				I2C_AcknowledgeConfig(I2C1, DISABLE);
 
-				//Setup STOPF bit after EV6
+				//Reading Register SR1 and SR2 in order to end the EV6
+				I2C_ReadRegister(I2C1, I2C_Register_SR1);
 				I2C_ReadRegister(I2C1, I2C_Register_SR2);
+
+				//STOPF bit should be set after EV6
 				I2C_GenerateSTOP(I2C1, ENABLE);
 
+				//Waiting for 1-byte data and receive it
 				while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE));
-
-				//For 1 byte reception, the byte should be received in EV6(I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)
 				eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
 
 				/* Update device information */
