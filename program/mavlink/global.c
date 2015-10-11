@@ -442,6 +442,8 @@ void load_global_data_from_eeprom(void)
 	   the EEPROM has been written */	
 	eeprom_is_written = (eeprom_data[0] == get_global_data_count() ? true : false);
 
+	EEPROM_DEBUG_PRINT("Check byte:%d\n\r", eeprom_data[0]);
+
 	bool parameter_config;
 	/* Start from second byte, 
 	 * First byte: check the eeprom has been use or not */
