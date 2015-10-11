@@ -143,13 +143,12 @@ static void handle_eeprom_read_request(void)
 	}
 
 	long higher_priority_task_woken = pdFALSE;
-	uint32_t current_event = I2C_GetLastEvent(I2C1);
 
 	/* I2C Event handler (Step by step) */
 	switch(eeprom_device_info.state) {
 	    case GENERATE_START_CONDITION:
 	    {
-		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) {
 			/* Step2 : send I2C device address  */
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
 
@@ -160,7 +159,7 @@ static void handle_eeprom_read_request(void)
 	    }
 	    case SEND_DEVICE_ADDRESS: //I2C device address
 	    {
-		if(current_event == I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
 			I2C_Cmd(I2C1, ENABLE);
 			//Step3: send EEPROM word address
 			I2C_SendData(I2C1, eeprom_device_info.word_address);
@@ -172,7 +171,7 @@ static void handle_eeprom_read_request(void)
 	    }
 	    case SEND_WORD_ADDRESS: //EEPROM address
 	    {
-		if(current_event == I2C_EVENT_MASTER_BYTE_TRANSMITTED) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) {
 			//Step4: generate the start condition again
 			I2C_GenerateSTART(I2C1, ENABLE);
 
@@ -183,7 +182,7 @@ static void handle_eeprom_read_request(void)
 	    }
 	    case GENERATE_START_CONDITION_AGAIN:
 	    {
-		if(current_event == I2C_EVENT_MASTER_MODE_SELECT) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) {
 			//Step5: Send I2C device address again
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Receiver);
 
@@ -194,7 +193,7 @@ static void handle_eeprom_read_request(void)
 	    }
 	    case SEND_DEVICE_ADDRESS_AGAIN:
 	    {
-		if(current_event == I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED) {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) {
 			//1 byte receive reception
 			if(eeprom_device_info.buffer_count == 1) {
 				//Setup NACK bit and Stop condition bit
