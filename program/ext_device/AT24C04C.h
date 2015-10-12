@@ -68,4 +68,12 @@ extern eeprom_t eeprom;
 
 void EEPROM_I2C_IRQ_HANDLER(void);
 
+#define EEPROM_DMA_TX_CHANNEL DMA_Channel_1
+#define EEPROM_DMA_TX_STREAM DMA1_Stream7
+#define EEPROM_DMA_RX_CHANNEL DMA_Channel_1
+#define EEPROM_DMA_RX_STREAM DMA1_Stream0
+#define EEPROM_I2C_DR_ADDR (uint32_t)(&(I2C1->DR))
+#define EEPROM_TX_DMA_FLAG_TCIF DMA_FLAG_TCIF7
+#define EEPROM_RX_DMA_FLAG_TCIF DMA_FLAG_TCIF0
+
 #endif
