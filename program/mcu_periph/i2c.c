@@ -55,7 +55,7 @@ void enable_i2c1()
 		.NVIC_IRQChannelCmd = ENABLE
 	};
 	NVIC_Init(&NVIC_InitStruct);
-#if 0
+
 	/* Configure and enable DMA1 stream7 interrupt */
 	NVIC_InitStruct.NVIC_IRQChannel = DMA1_Stream7_IRQn;
 	NVIC_Init(&NVIC_InitStruct);
@@ -74,7 +74,6 @@ void enable_i2c1()
 
 	DMA_ITConfig(EEPROM_DMA_TX_STREAM, DMA_IT_TC, ENABLE);
 	DMA_ITConfig(EEPROM_DMA_RX_STREAM, DMA_IT_TC, ENABLE);
-#endif
 } 
 
 void enable_i2c2()

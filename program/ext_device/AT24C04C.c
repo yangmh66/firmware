@@ -26,6 +26,10 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 void eeprom_clear(void);
 
+void i2c1_dma_tx_setup(uint8_t *data, uint32_t count);
+void i2c1_dma_rx_setup(uint8_t *data, uint32_t count);
+
+
 void DMA1_Stream7_IRQHandler(void);
 void I2C1_EV_IRQHandler(void);
 
@@ -191,39 +195,51 @@ static void handle_eeprom_read_request(void)
 			//Step5: Send I2C device address again
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Receiver);
 
-			/* Update device information */
-			eeprom_device_info.state = SEND_DEVICE_ADDRESS_AGAIN;
-		}
-		break;
-	    }
-	    case SEND_DEVICE_ADDRESS_AGAIN:
-	    {
-		if(I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR)) {
-			//1 byte receive reception
 			if(eeprom_device_info.buffer_count == 1) {
-				//Setup NACK bit during EV6
-				I2C_AcknowledgeConfig(I2C1, DISABLE);
-
-				//Reading Register SR1 and SR2 in order to end the EV6
-				I2C_ReadRegister(I2C1, I2C_Register_SR1);
-				I2C_ReadRegister(I2C1, I2C_Register_SR2);
-
-				//STOPF bit should be set after EV6
-				I2C_GenerateSTOP(I2C1, ENABLE);
-
-				//Waiting for 1-byte data and receive it
-				while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE));
-				eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
-
-				/* Update device information */
-				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-				eeprom_device_info.exit_status = I2C_SUCCESS;
-
-				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+				//1 byte reception (Polling)
+				eeprom_device_info.state = RECEIVE_ONE_BYTE_DATA;
+			} else {
+				//N byte reception (Using DMA)
+				eeprom_device_info.state = RECEIVE_N_BYTE_DATA;
 			}
 		}
 		break;
 	    }
+	    case RECEIVE_ONE_BYTE_DATA:
+	    {
+		if(I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR)) {
+			//Setup NACK bit during EV6
+			I2C_AcknowledgeConfig(I2C1, DISABLE);
+
+			//Reading Register SR1 and SR2 in order to end the EV6
+			I2C_ReadRegister(I2C1, I2C_Register_SR1);
+			I2C_ReadRegister(I2C1, I2C_Register_SR2);
+
+			//STOPF bit should be set after EV6
+			I2C_GenerateSTOP(I2C1, ENABLE);
+
+			//Waiting for 1-byte data and receive it
+			while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE));
+			eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
+
+			/* Update device information */
+			eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+			eeprom_device_info.exit_status = I2C_SUCCESS;
+
+			xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+		}
+		break;
+	    }
+	    case RECEIVE_N_BYTE_DATA:
+	    {
+		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) {
+			I2C_ITConfig(I2C1, I2C_IT_EVT, DISABLE);
+
+			//Setup DMA to receive the data
+			i2c1_dma_rx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
+		}
+	    }
+	    break;
 	}
 
 	portEND_SWITCHING_ISR(higher_priority_task_woken);
@@ -246,11 +262,24 @@ void DMA1_Stream7_IRQHandler(void)
 
 void DMA1_Stream0_IRQHandler(void)
 {
+	long higher_priority_task_woken = pdFALSE;
+
 	if(DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) != RESET) {
     		I2C_GenerateSTOP(I2C1, ENABLE);
+
     		DMA_Cmd(EEPROM_DMA_RX_STREAM, DISABLE);
     		DMA_ClearFlag(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF);
+
+		I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
+
+		eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+		eeprom_device_info.exit_status = I2C_SUCCESS;
+
+		xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
   	}
+
+	portEND_SWITCHING_ISR(higher_priority_task_woken);
+
 }
 
 /**
@@ -360,7 +389,6 @@ void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
   	DMA_Init(EEPROM_DMA_TX_STREAM, &i2c_init_struct);
   	DMA_Cmd(EEPROM_DMA_TX_STREAM, ENABLE);
   	I2C_DMACmd(I2C1, ENABLE);
-
 }
 
 void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
@@ -389,8 +417,6 @@ void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
  	I2C_DMALastTransferCmd(I2C1, ENABLE);
   	DMA_Cmd(EEPROM_DMA_RX_STREAM, ENABLE);
   	I2C_DMACmd(I2C1, ENABLE);
-  	
-
 }
 
 /*************************************
