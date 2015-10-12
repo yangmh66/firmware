@@ -83,47 +83,26 @@ static void handle_eeprom_write_request(void)
 	    case SEND_DEVICE_ADDRESS: //I2C device address
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
-			//Step3: send EEPROM word address
-			I2C_SendData(I2C1, eeprom_device_info.word_address);
-
 			/* Update device information */
-			eeprom_device_info.state = SEND_WORD_ADDRESS;
+			eeprom_device_info.state = GENERATE_STOP_CONDITION;
+
+			I2C_ITConfig(I2C1, I2C_IT_EVT, DISABLE);
+
+			i2c1_dma_tx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
 		}
     		break;
 	    }
-	    case SEND_WORD_ADDRESS: //EEPROM address
+	    case GENERATE_STOP_CONDITION:
 	    {
-		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) {
-			//Step4: send first byte to the EEPROM
-			I2C_SendData(I2C1, eeprom_device_info.buffer[0]);
-			eeprom_device_info.sent_count++;
+		if(I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF)) {
+			//Step6: generate the stop condition
+			I2C_GenerateSTOP(I2C1, ENABLE);
 
-			/* Update device information */
-			eeprom_device_info.state = SEND_DATA;
-		}
-		break;
-	    }
-	    case SEND_DATA:
-	    {
-		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED)) {
-			/* Finish sending all datas */
-			if(eeprom_device_info.sent_count == eeprom_device_info.buffer_count) {
-				//Step6: generate the stop condition
-				I2C_GenerateSTOP(I2C1, ENABLE);
+			/* Clear device information */
+			eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+			eeprom_device_info.exit_status = I2C_SUCCESS;
 
-				/* Clear device information */
-				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-				eeprom_device_info.sent_count = 0;
-				eeprom_device_info.exit_status = I2C_SUCCESS;
-
-				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
-
-				break;
-			}
-
-			//Step4-5: Keep sending the data
-			I2C_SendData(I2C1, eeprom_device_info.buffer[eeprom_device_info.sent_count]);
-			eeprom_device_info.sent_count++;
+			xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 		}
 		break;
 	    }
@@ -301,13 +280,18 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 		return I2C_BUSY_FAILED;
 	}
 
+	uint8_t send_buffer[EEPROM_PAGE_SIZE + 1] = {0}; //Reserve 1 for word address
+	send_buffer[0] = word_address; //Word address
+	memcpy(send_buffer + 1, data, data_count); //Payload
+
+
 	/* Set EEPROM device information */
 	eeprom_device_info.operating_type = EEPROM_DEVICE_WRITE;
 	eeprom_device_info.state = GENERATE_START_CONDITION;
 	eeprom_device_info.device_address = device_address;
 	eeprom_device_info.word_address = word_address;
-	eeprom_device_info.buffer = data;
-	eeprom_device_info.buffer_count = data_count;
+	eeprom_device_info.buffer = send_buffer;
+	eeprom_device_info.buffer_count = data_count + 1;
 	eeprom_device_info.sent_count = 0;
 
 	//Step1: generate the start condition
@@ -453,7 +437,6 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		uint8_t device_address = EEPROM_DEVICE_BASE_ADDRESS, word_address = 0x00;
 
 		/* Current page information */
-		uint8_t page_buffer[EEPROM_PAGE_SIZE] = {0};
 		int page_left_space = EEPROM_PAGE_SIZE - current_page_write_byte;
 
 		/* Calculate the device adrress and the word address (Only high 4 bit) */
@@ -467,9 +450,7 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		/* Write the data in current page */
 		if(data_left >= page_left_space) {
 			/* Fill the full page by writing data */
-			memcpy(page_buffer, data + (count - data_left), page_left_space);
-
-			TIMED(eeprom_page_write(page_buffer, device_address, word_address, page_left_space) != I2C_SUCCESS);
+			TIMED(eeprom_page_write(&data[count - data_left], device_address, word_address, page_left_space) != I2C_SUCCESS);
 
 			data_left -= EEPROM_PAGE_SIZE - current_page_write_byte;
 
@@ -478,9 +459,7 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			current_page_write_byte = 0;
 		} else {
 			/* Write the data into current page */
-			memcpy(page_buffer, data + (count - data_left), data_left);
-
-			TIMED(eeprom_page_write(page_buffer, device_address, word_address, data_left) != I2C_SUCCESS);
+			TIMED(eeprom_page_write(&data[count - data_left], device_address, word_address, data_left) != I2C_SUCCESS);
 
 			/* Increase the EEPROM page offset */
 			current_page_write_byte += data_left;
