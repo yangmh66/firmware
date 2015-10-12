@@ -304,6 +304,8 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
+	vTaskDelay(MILLI_SECOND_TICK);
+
 	return eeprom_device_info.exit_status;
 }
 
