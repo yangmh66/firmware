@@ -304,7 +304,8 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
-	vTaskDelay(MILLI_SECOND_TICK);
+	/* AT24C01's datasheet (page 8, byte write): http://www.atmel.com/Images/doc0134.pdf */
+	vTaskDelay(MILLI_SECOND_TICK * 10); //Delay 10ms until the writting process is finished
 
 	return eeprom_device_info.exit_status;
 }
