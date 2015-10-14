@@ -13,14 +13,10 @@
 
 #include "delay.h"
 
-/* EEPROM Timeout exception */
-int timeout;
-#define TIMED(x) timeout = 0xFF; while(x) \
-	{ if(timeout-- == 0) {break; i2c_bus_reset(); return EEPROM_I2C_FAILED;} }
-
-int i2c_timeout;
-#define I2C_TIMED(x) i2c_timeout = 0xFFFF; \
-	while(x) { if(i2c_timeout-- == 0) { return; } }
+//While-loop with timeout mechanism
+int timeout, error_flag;
+#define TIMED(timeout_max, x) timeout = timeout_max; error_flag = 0; \
+	while(x) { if(timeout-- == 0) {error_flag = 1; break;} }
 
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count);
@@ -28,10 +24,6 @@ void eeprom_clear(void);
 
 void i2c1_dma_tx_setup(uint8_t *data, uint32_t count);
 void i2c1_dma_rx_setup(uint8_t *data, uint32_t count);
-
-
-void DMA1_Stream7_IRQHandler(void);
-void I2C1_EV_IRQHandler(void);
 
 eeprom_t eeprom = {
 	.read = eeprom_read,
@@ -42,11 +34,6 @@ eeprom_t eeprom = {
 xSemaphoreHandle eeprom_sem = NULL;
 
 eeprom_device_info_t eeprom_device_info;
-
-static void i2c_bus_reset(void)
-{
-	//i2c1_reinit();
-}
 
 static void handle_eeprom_write_request(void)
 {
@@ -197,8 +184,13 @@ static void handle_eeprom_read_request(void)
 			//STOPF bit should be set after EV6
 			I2C_GenerateSTOP(I2C1, ENABLE);
 
-			//Waiting for 1-byte data and receive it
-			while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE));
+			//Waiting for 1-byte data by checking RXNE flag
+			TIMED(0xFFFF, I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) != SET);
+
+			if(error_flag) {
+			}
+			
+			//Receive the data
 			eeprom_device_info.buffer[0] = I2C_ReceiveData(I2C1);
 
 			/* Update device information */
@@ -258,7 +250,6 @@ void DMA1_Stream0_IRQHandler(void)
   	}
 
 	portEND_SWITCHING_ISR(higher_priority_task_woken);
-
 }
 
 /**
@@ -354,8 +345,10 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
 {
 	//check TCIF bit. It should be RESET when we ask new DMA request.
-	I2C_TIMED(DMA_GetFlagStatus(EEPROM_DMA_TX_STREAM, EEPROM_TX_DMA_FLAG_TCIF) == SET);
-	//XXX:Handle failure!
+	TIMED(0xFFFF, DMA_GetFlagStatus(EEPROM_DMA_TX_STREAM, EEPROM_TX_DMA_FLAG_TCIF) == SET);
+
+	if(error_flag) {
+	}
 
 	DMA_InitTypeDef i2c_init_struct;
 	i2c_init_struct.DMA_Channel = EEPROM_DMA_TX_CHANNEL;
@@ -381,8 +374,10 @@ void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
 void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
 {
 	//check TCIF bit. It should be RESET when we ask new DMA request.
-	I2C_TIMED( DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) == SET);
-	//XXX:Handle failure!
+	TIMED(0xFFFF, DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) == SET);
+
+	if(error_flag) {
+	}
 
 	DMA_InitTypeDef i2c_init_struct;
 	i2c_init_struct.DMA_Channel = EEPROM_DMA_RX_CHANNEL;
@@ -453,7 +448,7 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		/* Write the data in current page */
 		if(data_left >= page_left_space) {
 			/* Fill the full page by writing data */
-			TIMED(eeprom_page_write(&data[count - data_left], device_address, word_address, page_left_space) != I2C_SUCCESS);
+			TIMED(0xFF, eeprom_page_write(&data[count - data_left], device_address, word_address, page_left_space) != I2C_SUCCESS);
 
 			data_left -= EEPROM_PAGE_SIZE - current_page_write_byte;
 
@@ -462,11 +457,14 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			current_page_write_byte = 0;
 		} else {
 			/* Write the data into current page */
-			TIMED(eeprom_page_write(&data[count - data_left], device_address, word_address, data_left) != I2C_SUCCESS);
+			TIMED(0xFF, eeprom_page_write(&data[count - data_left], device_address, word_address, data_left) != I2C_SUCCESS);
 
 			/* Increase the EEPROM page offset */
 			current_page_write_byte += data_left;
 		}
+	}
+
+	if(error_flag) {
 	}
 
 	return EEPROM_SUCCESS;
@@ -517,7 +515,7 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		/* Read the data from the page */
 		if(data_left >= page_left_space) {
 			/* The page is going to full */
-			TIMED(eeprom_sequential_read(buffer, device_address, word_address, page_left_space) != I2C_SUCCESS);
+			TIMED(0xFF, eeprom_sequential_read(buffer, device_address, word_address, page_left_space) != I2C_SUCCESS);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, page_left_space);
@@ -529,7 +527,7 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		} else {
 			/* There will be some empty space in this page after the read
 			   operation */
-			TIMED(eeprom_sequential_read(buffer, device_address, word_address, data_left) != I2C_SUCCESS);
+			TIMED(0xFF, eeprom_sequential_read(buffer, device_address, word_address, data_left) != I2C_SUCCESS);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, data_left);
@@ -537,6 +535,9 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			/* Increase the current EEPROM page offset */
 			current_page_read_byte += data_left;
 		}
+	}
+
+	if(error_flag) {
 	}
 
 	return EEPROM_SUCCESS;

@@ -68,6 +68,9 @@ typedef struct {
 extern eeprom_t eeprom;
 
 void EEPROM_I2C_IRQ_HANDLER(void);
+void DMA1_Stream0_IRQHandler(void);
+void DMA1_Stream7_IRQHandler(void);
+void I2C1_EV_IRQHandler(void);
 
 #define EEPROM_DMA_TX_CHANNEL DMA_Channel_1
 #define EEPROM_DMA_TX_STREAM DMA1_Stream7
