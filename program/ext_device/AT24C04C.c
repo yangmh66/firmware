@@ -282,14 +282,15 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 	int data_count)
 {
 	//Wait until I2C is not busy anymore
-	if(i2c_flag_loop_check(I2C1, I2C_FLAG_BUSY, 0xFFFF) != 0) {
+	TIMED(0xFFFF, I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY) != RESET);
+
+	if(error_flag) {
 		return I2C_BUSY_FAILED;
 	}
 
 	uint8_t send_buffer[EEPROM_PAGE_SIZE + 1] = {0}; //Reserve 1 for word address
 	send_buffer[0] = word_address; //Word address
 	memcpy(send_buffer + 1, data, data_count); //Payload
-
 
 	/* Set EEPROM device information */
 	eeprom_device_info.operating_type = EEPROM_DEVICE_WRITE;
@@ -304,7 +305,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 	I2C_GenerateSTART(I2C1, ENABLE); //Trigger the I2C communication
 
 	//I2C interrupt handler should finish the work in 1 millisecond
-	while (!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
+	while(!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
 		//Set the SWRST bit of I2C CR1 register to high to reset the I2C
 		I2C_SoftwareResetCmd(I2C1, ENABLE);
 
@@ -331,7 +332,9 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	int buffer_count)
 {
 	//Wait until I2C is not busy anymore
-	if(i2c_flag_loop_check(I2C1, I2C_FLAG_BUSY, 0xFFFF) != 0) {
+	TIMED(0xFFFF, I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY) != RESET);
+
+	if(error_flag) {
 		return I2C_BUSY_FAILED;
 	}
 
@@ -348,7 +351,7 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	I2C_GenerateSTART(I2C1, ENABLE); //Trigger the I2C communication
 
 	//I2C interrupt handler should finish the work in 1 millisecond
-	while (!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
+	while(!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
 		//Set the SWRST bit of I2C CR1 register to high to reset the I2C
 		I2C_SoftwareResetCmd(I2C1, ENABLE);
 
