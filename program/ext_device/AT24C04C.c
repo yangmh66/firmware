@@ -310,7 +310,10 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 
 	//I2C interrupt handler should finish the work in 1 millisecond
 	while (!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
-		//TODO: Reset I2C
+		//Set the SWRST bit of I2C CR1 register to high to reset the I2C
+		I2C_SoftwareResetCmd(I2C1, ENABLE);
+
+		//XXX:Debug print
 
 		return I2C_TIMEOUT_FAILED;
 	}
@@ -355,7 +358,10 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 
 	//I2C interrupt handler should finish the work in 1 millisecond
 	while (!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
-		//TODO:Reset I2C
+		//Set the SWRST bit of I2C CR1 register to high to reset the I2C
+		I2C_SoftwareResetCmd(I2C1, ENABLE);
+
+		//XXX:Debug print
 
 		return I2C_TIMEOUT_FAILED;
 	}
@@ -583,7 +589,7 @@ void eeprom_clear(void)
 
 void test_eeprom()
 {
-	char *str = "hellow world";
+	char *str = "hello world";
 	uint16_t size = strlen(str);
 	uint16_t addr = 0;
 	int16_t i = 0;
