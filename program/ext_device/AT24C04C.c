@@ -281,11 +281,6 @@ void DMA1_Stream0_IRQHandler(void)
 static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word_address,
 	int data_count)
 {
-	//XXX:Check IDLE state?
-	if(eeprom_device_info.operating_type != EEPROM_DEVICE_IDLE) {
-		while(1); //Debug code
-	}
-
 	//Wait until I2C is not busy anymore
 	if(i2c_flag_loop_check(I2C1, I2C_FLAG_BUSY, 0xFFFF) != 0) {
 		return I2C_BUSY_FAILED;
@@ -335,10 +330,6 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8_t word_address,
 	int buffer_count)
 {
-	if(eeprom_device_info.operating_type != EEPROM_DEVICE_IDLE) {
-		while(1); //Debug code
-	}
-
 	//Wait until I2C is not busy anymore
 	if(i2c_flag_loop_check(I2C1, I2C_FLAG_BUSY, 0xFFFF) != 0) {
 		return I2C_BUSY_FAILED;
