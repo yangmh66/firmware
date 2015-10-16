@@ -1,10 +1,11 @@
 .tags*
+cscope*
 *.o
 *.d
-cscope*
 *.bin
 *.elf
 *.out
+*.swl
 *.swp
 *.swn
 *.swm
