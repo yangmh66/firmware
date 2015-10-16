@@ -18,12 +18,12 @@ int timeout, error_flag;
 #define TIMED(timeout_max, x) timeout = timeout_max; error_flag = 0; \
 	while(x) { if(timeout-- == 0) {error_flag = 1; break;} }
 
+static void i2c1_dma_tx_setup(uint8_t *data, uint32_t count);
+static void i2c1_dma_rx_setup(uint8_t *data, uint32_t count);
+
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 void eeprom_clear(void);
-
-void i2c1_dma_tx_setup(uint8_t *data, uint32_t count);
-void i2c1_dma_rx_setup(uint8_t *data, uint32_t count);
 
 eeprom_t eeprom = {
 	.read = eeprom_read,
@@ -76,6 +76,13 @@ static void handle_eeprom_write_request(void)
 			I2C_ITConfig(I2C1, I2C_IT_EVT, DISABLE);
 
 			i2c1_dma_tx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
+	
+			if(error_flag) {
+				/* Fail to receive 1-byte data */
+				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+				eeprom_device_info.exit_status = EEPROM_I2C_FAILED;
+				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+			}
 		}
     		break;
 	    }
@@ -188,6 +195,12 @@ static void handle_eeprom_read_request(void)
 			TIMED(0xFFFF, I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) != SET);
 
 			if(error_flag) {
+				/* Fail to receive 1-byte data */
+				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+				eeprom_device_info.exit_status = EEPROM_I2C_FAILED;
+				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+
+				break;
 			}
 			
 			//Receive the data
@@ -208,6 +221,14 @@ static void handle_eeprom_read_request(void)
 
 			//Setup DMA to receive the data
 			i2c1_dma_rx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
+#if 0
+			if(error_flag) {
+				/* Fail to receive 1-byte data */
+				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
+				eeprom_device_info.exit_status = EEPROM_I2C_FAILED;
+				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
+			}
+#endif
 		}
 	    }
 	    break;
@@ -290,6 +311,8 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 
 	//I2C interrupt handler should finish the work in 1 millisecond
 	while (!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
+		//TODO: Reset I2C
+
 		return I2C_TIMEOUT_FAILED;
 	}
 
@@ -333,7 +356,8 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 
 	//I2C interrupt handler should finish the work in 1 millisecond
 	while (!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
-		//XXX:Timeout! Reset the bus
+		//TODO:Reset I2C
+
 		return I2C_TIMEOUT_FAILED;
 	}
 
@@ -342,12 +366,13 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	return eeprom_device_info.exit_status;
 }
 
-void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
+static void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
 {
 	//check TCIF bit. It should be RESET when we ask new DMA request.
 	TIMED(0xFFFF, DMA_GetFlagStatus(EEPROM_DMA_TX_STREAM, EEPROM_TX_DMA_FLAG_TCIF) == SET);
 
 	if(error_flag) {
+		return;
 	}
 
 	DMA_InitTypeDef i2c_init_struct;
@@ -371,12 +396,13 @@ void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
   	I2C_DMACmd(I2C1, ENABLE);
 }
 
-void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
+static void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
 {
 	//check TCIF bit. It should be RESET when we ask new DMA request.
 	TIMED(0xFFFF, DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) == SET);
 
 	if(error_flag) {
+		return;
 	}
 
 	DMA_InitTypeDef i2c_init_struct;
@@ -465,6 +491,9 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 	}
 
 	if(error_flag) {
+		return EEPROM_I2C_FAILED;
+
+		//TODO:Broadcast the error message via MAVLink
 	}
 
 	return EEPROM_SUCCESS;
@@ -538,6 +567,9 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 	}
 
 	if(error_flag) {
+		return EEPROM_I2C_FAILED;
+
+		//TODO:Broadcast the error message via MAVLink
 	}
 
 	return EEPROM_SUCCESS;
