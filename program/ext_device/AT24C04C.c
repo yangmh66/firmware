@@ -221,14 +221,13 @@ static void handle_eeprom_read_request(void)
 
 			//Setup DMA to receive the data
 			i2c1_dma_rx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
-#if 0
+
 			if(error_flag) {
 				/* Fail to receive 1-byte data */
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
 				eeprom_device_info.exit_status = EEPROM_I2C_FAILED;
 				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 			}
-#endif
 		}
 	    }
 	    break;
