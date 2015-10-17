@@ -347,6 +347,10 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 	TIMED(0xFFFF, I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY) != RESET);
 
 	if(error_flag) {
+		//Set the SWRST bit of I2C CR1 register to high to reset the I2C
+		I2C_SoftwareResetCmd(I2C1, ENABLE);
+		vTaskDelay(MILLI_SECOND_TICK);
+
 		return I2C_BUSY_FAILED;
 	}
 
@@ -370,6 +374,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 	while(!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
 		//Set the SWRST bit of I2C CR1 register to high to reset the I2C
 		I2C_SoftwareResetCmd(I2C1, ENABLE);
+		vTaskDelay(MILLI_SECOND_TICK);
 
 		//XXX:Debug print
 
@@ -397,6 +402,10 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	TIMED(0xFFFF, I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY) != RESET);
 
 	if(error_flag) {
+		//Set the SWRST bit of I2C CR1 register to high to reset the I2C
+		I2C_SoftwareResetCmd(I2C1, ENABLE);
+		vTaskDelay(MILLI_SECOND_TICK);
+
 		return I2C_BUSY_FAILED;
 	}
 
@@ -416,6 +425,7 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	while(!xSemaphoreTake(eeprom_sem, MILLI_SECOND_TICK)) {
 		//Set the SWRST bit of I2C CR1 register to high to reset the I2C
 		I2C_SoftwareResetCmd(I2C1, ENABLE);
+		vTaskDelay(MILLI_SECOND_TICK);
 
 		//XXX:Debug print
 
