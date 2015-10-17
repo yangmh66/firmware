@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-//Hardware abstraction
+/* Hardware abstraction */
 #define EEPROM_I2C_IRQ_HANDLER I2C1_EV_IRQHandler
 
 /* EEPROM device information */
@@ -13,14 +13,19 @@
 #define EEPROM_PAGE_SIZE 16
 #define EEPROM_MAX_SIZE 1024
 
-/* I2C event timeout */
-#define I2C_TIMEOUT_COUNT_MAX 10
+/* EEPROM I2C DMA configurations */
+#define EEPROM_DMA_TX_CHANNEL DMA_Channel_1
+#define EEPROM_DMA_TX_STREAM DMA1_Stream7
+#define EEPROM_DMA_RX_CHANNEL DMA_Channel_1
+#define EEPROM_DMA_RX_STREAM DMA1_Stream0
+#define EEPROM_I2C_DR_ADDR (uint32_t)(&(I2C1->DR))
+#define EEPROM_TX_DMA_FLAG_TCIF DMA_FLAG_TCIF7
+#define EEPROM_RX_DMA_FLAG_TCIF DMA_FLAG_TCIF0
 
 enum {
 	I2C_SUCCESS,
 	I2C_BUSY_FAILED,
 	I2C_TIMEOUT_FAILED,
-	I2C_WRONG_EVENT_FAILED
 } I2C_Exit_Status;
 
 enum {
@@ -70,14 +75,5 @@ extern eeprom_t eeprom;
 void EEPROM_I2C_IRQ_HANDLER(void);
 void DMA1_Stream0_IRQHandler(void);
 void DMA1_Stream7_IRQHandler(void);
-void I2C1_EV_IRQHandler(void);
-
-#define EEPROM_DMA_TX_CHANNEL DMA_Channel_1
-#define EEPROM_DMA_TX_STREAM DMA1_Stream7
-#define EEPROM_DMA_RX_CHANNEL DMA_Channel_1
-#define EEPROM_DMA_RX_STREAM DMA1_Stream0
-#define EEPROM_I2C_DR_ADDR (uint32_t)(&(I2C1->DR))
-#define EEPROM_TX_DMA_FLAG_TCIF DMA_FLAG_TCIF7
-#define EEPROM_RX_DMA_FLAG_TCIF DMA_FLAG_TCIF0
 
 #endif

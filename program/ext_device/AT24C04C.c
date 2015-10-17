@@ -32,6 +32,9 @@ xSemaphoreHandle eeprom_sem = NULL;
 
 eeprom_device_info_t eeprom_device_info;
 
+/***************************************
+ * DMA configuration / setup functions *
+ ***************************************/
 static void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
 {
 	//check TCIF bit. It should be RESET when we ask new DMA request.
@@ -93,6 +96,9 @@ static void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
   	I2C_DMACmd(I2C1, ENABLE);
 }
 
+/***************************************
+ * Interruption handlers (I2C and DMA) *
+ ***************************************/
 static void handle_eeprom_write_request(void)
 {
 	/* [Procedure]
@@ -104,10 +110,6 @@ static void handle_eeprom_write_request(void)
 	 * ----------------------------------------------------------------
 	 * For detailed description you should read the ST reference manual
 	 */
-
-	if(eeprom_device_info.operating_type != EEPROM_DEVICE_WRITE) {
-		return;
-	}
 
 	long higher_priority_task_woken = pdFALSE;
 
@@ -177,10 +179,6 @@ static void handle_eeprom_read_request(void)
 	 * ----------------------------------------------------------------
 	 * For detailed description you should read the ST reference manual
 	 */
-
-	if(eeprom_device_info.operating_type != EEPROM_DEVICE_READ) {
-		return;
-	}
 
 	long higher_priority_task_woken = pdFALSE;
 
@@ -295,8 +293,11 @@ static void handle_eeprom_read_request(void)
 
 void EEPROM_I2C_IRQ_HANDLER(void)
 {
-	handle_eeprom_write_request();
-	handle_eeprom_read_request();
+	if(eeprom_device_info.operating_type == EEPROM_DEVICE_WRITE) {
+		handle_eeprom_write_request();
+	} else if(eeprom_device_info.operating_type != EEPROM_DEVICE_READ) {
+		handle_eeprom_read_request();
+	}
 }
 
 void DMA1_Stream7_IRQHandler(void)
@@ -329,9 +330,13 @@ void DMA1_Stream0_IRQHandler(void)
 	portEND_SWITCHING_ISR(higher_priority_task_woken);
 }
 
+/**************************************************************************
+ * EEPROM low level operation's interface (trigger ISR to finish the job) *
+ **************************************************************************/
+
 /**
   * @brief  EEPROM low level i2c writting
-  * @param  Data array (pass with pointer), i2c device address, eeprom word address and count
+  * @param  Data array (pointer), i2c device address, eeprom word address and count
   *	    of the data
   * @retval Operating result
   */
@@ -381,7 +386,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 
 /**
   * @brief  EEPROM low level i2c reading
-  * @param  Store buffer(pointer), i2c device address, eeprom word address and count
+  * @param  buffer to store (pointer), i2c device address, eeprom word address and count
   *	    of the received data
   * @retval Operating result
   */
@@ -422,9 +427,9 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	return eeprom_device_info.exit_status;
 }
 
-/*************************************
- * EEPROM high level page management *
- *************************************/
+/*************************************************************************************************
+ * EEPROM high level interface (page management and call low level functions to finish the work) *
+ *************************************************************************************************/
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 {
 	/* Check the eeprom address is valid or not */
@@ -570,6 +575,9 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 	return EEPROM_SUCCESS;
 }
 
+/****************************
+ * EEPROM utility functions *
+ ****************************/
 void eeprom_clear(void)
 {
         //Clear EEPROM
