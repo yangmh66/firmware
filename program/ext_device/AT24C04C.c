@@ -18,9 +18,6 @@ int timeout, error_flag;
 #define TIMED(timeout_max, x) timeout = timeout_max; error_flag = 0; \
 	while(x) { if(timeout-- == 0) {error_flag = 1; break;} }
 
-static void i2c1_dma_tx_setup(uint8_t *data, uint32_t count);
-static void i2c1_dma_rx_setup(uint8_t *data, uint32_t count);
-
 int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count);
 void eeprom_clear(void);
@@ -35,18 +32,78 @@ xSemaphoreHandle eeprom_sem = NULL;
 
 eeprom_device_info_t eeprom_device_info;
 
+static void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
+{
+	//check TCIF bit. It should be RESET when we ask new DMA request.
+	TIMED(0xFFFF, DMA_GetFlagStatus(EEPROM_DMA_TX_STREAM, EEPROM_TX_DMA_FLAG_TCIF) == SET);
+
+	if(error_flag) {
+		return;
+	}
+
+	DMA_InitTypeDef i2c_init_struct;
+	i2c_init_struct.DMA_Channel = EEPROM_DMA_TX_CHANNEL;
+  	i2c_init_struct.DMA_PeripheralBaseAddr = EEPROM_I2C_DR_ADDR;
+  	i2c_init_struct.DMA_Memory0BaseAddr = (uint32_t)data;    /* This parameter will be configured durig communication */;
+  	i2c_init_struct.DMA_DIR = DMA_DIR_MemoryToPeripheral; /* This parameter will be configured durig communication */
+  	i2c_init_struct.DMA_BufferSize = count;              /* This parameter will be configured durig communication */
+  	i2c_init_struct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  	i2c_init_struct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  	i2c_init_struct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+  	i2c_init_struct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+  	i2c_init_struct.DMA_Mode = DMA_Mode_Normal;
+  	i2c_init_struct.DMA_Priority = DMA_Priority_VeryHigh;
+  	i2c_init_struct.DMA_FIFOMode = DMA_FIFOMode_Disable;
+  	i2c_init_struct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+  	i2c_init_struct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+  	i2c_init_struct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+  	DMA_Init(EEPROM_DMA_TX_STREAM, &i2c_init_struct);
+  	DMA_Cmd(EEPROM_DMA_TX_STREAM, ENABLE);
+  	I2C_DMACmd(I2C1, ENABLE);
+}
+
+static void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
+{
+	//check TCIF bit. It should be RESET when we ask new DMA request.
+	TIMED(0xFFFF, DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) == SET);
+
+	if(error_flag) {
+		return;
+	}
+
+	DMA_InitTypeDef i2c_init_struct;
+	i2c_init_struct.DMA_Channel = EEPROM_DMA_RX_CHANNEL;
+  	i2c_init_struct.DMA_PeripheralBaseAddr = EEPROM_I2C_DR_ADDR;
+  	i2c_init_struct.DMA_Memory0BaseAddr = (uint32_t)data;    /* This parameter will be configured durig communication */;
+  	i2c_init_struct.DMA_DIR = DMA_DIR_PeripheralToMemory; /* This parameter will be configured durig communication */
+  	i2c_init_struct.DMA_BufferSize = count;              /* This parameter will be configured durig communication */
+  	i2c_init_struct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  	i2c_init_struct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  	i2c_init_struct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+  	i2c_init_struct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+  	i2c_init_struct.DMA_Mode = DMA_Mode_Normal;
+  	i2c_init_struct.DMA_Priority = DMA_Priority_VeryHigh;
+  	i2c_init_struct.DMA_FIFOMode = DMA_FIFOMode_Disable;
+  	i2c_init_struct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+  	i2c_init_struct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+  	i2c_init_struct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+  	DMA_Init(EEPROM_DMA_RX_STREAM, &i2c_init_struct);
+ 	I2C_DMALastTransferCmd(I2C1, ENABLE);
+  	DMA_Cmd(EEPROM_DMA_RX_STREAM, ENABLE);
+  	I2C_DMACmd(I2C1, ENABLE);
+}
+
 static void handle_eeprom_write_request(void)
 {
 	/* [Procedure]
-	 * 1.Generate start condition -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
-	 * 2.Send I2C device address -> wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
-	 * 3.Send EEPROM address -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED" 
-	 * 4.Send a byte to EEPROM -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED"
-	 * 5.Loop step 4 until finish sending the data
-	 * 6.Generate stop condition -> wait for stop event
+	 * ----------------------------------------------------------------
+	 * 1.Generate start condition
+	 * 2.Send I2C device address
+	 * 3.Enable DMA to send word address and datas
+	 * 4.Generate stop condition
+	 * ----------------------------------------------------------------
+	 * For detailed description you should read the ST reference manual
 	 */
-
-	//Please carefully view procedure first then read the code below
 
 	if(eeprom_device_info.operating_type != EEPROM_DEVICE_WRITE) {
 		return;
@@ -62,19 +119,19 @@ static void handle_eeprom_write_request(void)
 			//Step2: send I2C device address
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
 
-			/* Update device information */
-			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
+			eeprom_device_info.state = SEND_DEVICE_ADDRESS; //Move to next step
 		}
 		break;
 	    }
 	    case SEND_DEVICE_ADDRESS: //I2C device address
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
-			/* Update device information */
-			eeprom_device_info.state = GENERATE_STOP_CONDITION;
+			eeprom_device_info.state = GENERATE_STOP_CONDITION; //Move to next step
 
+			//DMA ISR will re-enable this after the job is finished
 			I2C_ITConfig(I2C1, I2C_IT_EVT, DISABLE);
 
+			//Step3. enable DMA to send word address and datas
 			i2c1_dma_tx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
 	
 			if(error_flag) {
@@ -89,7 +146,7 @@ static void handle_eeprom_write_request(void)
 	    case GENERATE_STOP_CONDITION:
 	    {
 		if(I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF)) {
-			//Step6: generate the stop condition
+			//Step4: generate stop condition
 			I2C_GenerateSTOP(I2C1, ENABLE);
 
 			/* Clear device information */
@@ -108,17 +165,18 @@ static void handle_eeprom_write_request(void)
 static void handle_eeprom_read_request(void)
 {
 	/* [Procedure]
-	 * 1.Generate start condition -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
-	 * 2.Send I2C device address -> wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
-	 * 3.Send EEPROM address -> wait for event "I2C_EVENT_MASTER_BYTE_TRANSMITTED" 
-	 * 4.Generate start condition again -> wait for event "I2C_EVENT_MASTER_MODE_SELECT"
-	 * 5.Send I2C device address again -> wait for event "I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED"
-	 * 6.Read a byte from EEPROM -> wait for event "I2C_EVENT_MASTER_BYTE_RECEIVED"
-	 * 7.Loop step 6 until finish receiving the data
-	 * 8.Generate stop condition -> wait for stop event
+	 * ----------------------------------------------------------------
+	 * 1.Generate start condition
+	 * 2.Send I2C device address
+	 * 3.Send EEPROM address
+	 * 4.Generate start condition again
+	 * 5.Send I2C device address again
+	 * 6.For 1 byte case, wait for the RXNE flag and receive the data
+	 *   For n byte case, enable DMA to receive all datas
+	 * 7.Generate stop condition
+	 * ----------------------------------------------------------------
+	 * For detailed description you should read the ST reference manual
 	 */
-
-	//Please carefully view the procedure first then read the code below
 
 	if(eeprom_device_info.operating_type != EEPROM_DEVICE_READ) {
 		return;
@@ -134,8 +192,7 @@ static void handle_eeprom_read_request(void)
 			/* Step2 : send I2C device address  */
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
 
-			/* Update device information */
-			eeprom_device_info.state = SEND_DEVICE_ADDRESS;
+			eeprom_device_info.state = SEND_DEVICE_ADDRESS; //Move to next step
 		}
 		break;
 	    }
@@ -143,11 +200,11 @@ static void handle_eeprom_read_request(void)
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
 			I2C_Cmd(I2C1, ENABLE);
+
 			//Step3: send EEPROM word address
 			I2C_SendData(I2C1, eeprom_device_info.word_address);
 
-			/* Update device information */
-			eeprom_device_info.state = SEND_WORD_ADDRESS;
+			eeprom_device_info.state = SEND_WORD_ADDRESS; //Move to next step
 		}
 		break;
 	    }
@@ -157,8 +214,7 @@ static void handle_eeprom_read_request(void)
 			//Step4: generate the start condition again
 			I2C_GenerateSTART(I2C1, ENABLE);
 
-			/* Update device information */
-			eeprom_device_info.state = GENERATE_START_CONDITION_AGAIN;
+			eeprom_device_info.state = GENERATE_START_CONDITION_AGAIN; //Move to next step
 		}
 		break;
 	    }
@@ -169,10 +225,10 @@ static void handle_eeprom_read_request(void)
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Receiver);
 
 			if(eeprom_device_info.buffer_count == 1) {
-				//1 byte reception (Polling)
+				//Step6: 1 byte reception (Polling)
 				eeprom_device_info.state = RECEIVE_ONE_BYTE_DATA;
 			} else {
-				//N byte reception (Using DMA)
+				//Step6: N byte reception (Using DMA)
 				eeprom_device_info.state = RECEIVE_N_BYTE_DATA;
 			}
 		}
@@ -189,7 +245,7 @@ static void handle_eeprom_read_request(void)
 			I2C_ReadRegister(I2C1, I2C_Register_SR2);
 
 			//STOPF bit should be set after EV6
-			I2C_GenerateSTOP(I2C1, ENABLE);
+			I2C_GenerateSTOP(I2C1, ENABLE); //Step7: Generate stop condition
 
 			//Waiting for 1-byte data by checking RXNE flag
 			TIMED(0xFFFF, I2C_GetFlagStatus(I2C1, I2C_FLAG_RXNE) != SET);
@@ -217,9 +273,10 @@ static void handle_eeprom_read_request(void)
 	    case RECEIVE_N_BYTE_DATA:
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) {
+			//DMA ISR will re-enable this after the job is finished
 			I2C_ITConfig(I2C1, I2C_IT_EVT, DISABLE);
 
-			//Setup DMA to receive the data
+			//Enable DMA to receive the data
 			i2c1_dma_rx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
 
 			if(error_flag) {
@@ -256,7 +313,7 @@ void DMA1_Stream0_IRQHandler(void)
 	long higher_priority_task_woken = pdFALSE;
 
 	if(DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) != RESET) {
-    		I2C_GenerateSTOP(I2C1, ENABLE);
+    		I2C_GenerateSTOP(I2C1, ENABLE); //Step7: Generate stop condition
 
     		DMA_Cmd(EEPROM_DMA_RX_STREAM, DISABLE);
     		DMA_ClearFlag(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF);
@@ -363,67 +420,6 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
 	return eeprom_device_info.exit_status;
-}
-
-static void i2c1_dma_tx_setup(uint8_t *data, uint32_t count)
-{
-	//check TCIF bit. It should be RESET when we ask new DMA request.
-	TIMED(0xFFFF, DMA_GetFlagStatus(EEPROM_DMA_TX_STREAM, EEPROM_TX_DMA_FLAG_TCIF) == SET);
-
-	if(error_flag) {
-		return;
-	}
-
-	DMA_InitTypeDef i2c_init_struct;
-	i2c_init_struct.DMA_Channel = EEPROM_DMA_TX_CHANNEL;
-  	i2c_init_struct.DMA_PeripheralBaseAddr = EEPROM_I2C_DR_ADDR;
-  	i2c_init_struct.DMA_Memory0BaseAddr = (uint32_t)data;    /* This parameter will be configured durig communication */;
-  	i2c_init_struct.DMA_DIR = DMA_DIR_MemoryToPeripheral; /* This parameter will be configured durig communication */
-  	i2c_init_struct.DMA_BufferSize = count;              /* This parameter will be configured durig communication */
-  	i2c_init_struct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-  	i2c_init_struct.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  	i2c_init_struct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-  	i2c_init_struct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-  	i2c_init_struct.DMA_Mode = DMA_Mode_Normal;
-  	i2c_init_struct.DMA_Priority = DMA_Priority_VeryHigh;
-  	i2c_init_struct.DMA_FIFOMode = DMA_FIFOMode_Disable;
-  	i2c_init_struct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
-  	i2c_init_struct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-  	i2c_init_struct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-  	DMA_Init(EEPROM_DMA_TX_STREAM, &i2c_init_struct);
-  	DMA_Cmd(EEPROM_DMA_TX_STREAM, ENABLE);
-  	I2C_DMACmd(I2C1, ENABLE);
-}
-
-static void i2c1_dma_rx_setup(uint8_t *data, uint32_t count)
-{
-	//check TCIF bit. It should be RESET when we ask new DMA request.
-	TIMED(0xFFFF, DMA_GetFlagStatus(EEPROM_DMA_RX_STREAM, EEPROM_RX_DMA_FLAG_TCIF) == SET);
-
-	if(error_flag) {
-		return;
-	}
-
-	DMA_InitTypeDef i2c_init_struct;
-	i2c_init_struct.DMA_Channel = EEPROM_DMA_RX_CHANNEL;
-  	i2c_init_struct.DMA_PeripheralBaseAddr = EEPROM_I2C_DR_ADDR;
-  	i2c_init_struct.DMA_Memory0BaseAddr = (uint32_t)data;    /* This parameter will be configured durig communication */;
-  	i2c_init_struct.DMA_DIR = DMA_DIR_PeripheralToMemory; /* This parameter will be configured durig communication */
-  	i2c_init_struct.DMA_BufferSize = count;              /* This parameter will be configured durig communication */
-  	i2c_init_struct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-  	i2c_init_struct.DMA_MemoryInc = DMA_MemoryInc_Enable;
-  	i2c_init_struct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-  	i2c_init_struct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-  	i2c_init_struct.DMA_Mode = DMA_Mode_Normal;
-  	i2c_init_struct.DMA_Priority = DMA_Priority_VeryHigh;
-  	i2c_init_struct.DMA_FIFOMode = DMA_FIFOMode_Disable;
-  	i2c_init_struct.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
-  	i2c_init_struct.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-  	i2c_init_struct.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-  	DMA_Init(EEPROM_DMA_RX_STREAM, &i2c_init_struct);
- 	I2C_DMALastTransferCmd(I2C1, ENABLE);
-  	DMA_Cmd(EEPROM_DMA_RX_STREAM, ENABLE);
-  	I2C_DMACmd(I2C1, ENABLE);
 }
 
 /*************************************
