@@ -151,4 +151,6 @@ uint32_t uart3_tx_stream_getTransmissionRate(float updateRateHz);
 #define mavlink_receiver_serial_write(buffer,length) uart3_tx_stream_write(buffer,length,  DMA_TX_TaskID_MAVLINK_RECEIVER, DMA_TX_FH_WaitReadySemaphore , DMA_TX_TCH_NoWait ,30)
 #define status_mavlink_serial_write(buffer,length) uart3_tx_stream_write(buffer,length,  DMA_TX_TaskID_MAVLINK_BROADCAST, DMA_TX_FH_WaitReadySemaphore , DMA_TX_TCH_NoWait ,30)
 
+#define eeprom_manager_task_serial_write(buffer,length) uart3_tx_stream_write(buffer,length,  DMA_TX_TaskID_EEPROM_MANAGER_TASK, DMA_TX_FH_WaitReadySemaphore , DMA_TX_TCH_NoWait ,30)
+
 #endif

@@ -1,17 +1,23 @@
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "gpio.h"
 #include "led.h"
+#include "usart.h"
 
 #include "AT24C04C.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "mavlink.h"
+
 #include "global.h"
 #include "eeprom_task.h"
 
 extern xTaskHandle eeprom_save_task_handle;
+
+uint8_t eeprom_task_buffer[MAVLINK_MAX_PAYLOAD_LEN];
 
 bool save_request;
 bool task_has_been_suspended;
@@ -56,6 +62,15 @@ void eeprom_task_suspend_by_flight_control(void)
 bool is_eeprom_task_running(void)
 {
 	return eeprom_task_is_running;
+}
+
+static void send_mavlink_status_text_message(char *text, uint8_t severity)
+{
+	mavlink_message_t msg;
+	mavlink_msg_statustext_pack(1, 0, &msg, severity, text);
+
+	uint16_t len = mavlink_msg_to_send_buffer(eeprom_task_buffer, &msg);
+	eeprom_manager_task_serial_write(eeprom_task_buffer, len);
 }
 
 /* This task is use for saving global datas into the EEPROM without interrupt
