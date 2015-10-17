@@ -295,7 +295,7 @@ void EEPROM_I2C_IRQ_HANDLER(void)
 {
 	if(eeprom_device_info.operating_type == EEPROM_DEVICE_WRITE) {
 		handle_eeprom_write_request();
-	} else if(eeprom_device_info.operating_type != EEPROM_DEVICE_READ) {
+	} else if(eeprom_device_info.operating_type == EEPROM_DEVICE_READ) {
 		handle_eeprom_read_request();
 	}
 }
