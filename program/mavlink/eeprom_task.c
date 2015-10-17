@@ -78,6 +78,8 @@ static void send_mavlink_status_text_message(char *text, uint8_t severity)
 void eeprom_save_task(void)
 {
 	while(1) {
+		bool eeprom_failed;
+
 		eeprom_task_is_running = true;
 
 		/* Ensure the data will fully writting into the eeprom by checking
@@ -90,16 +92,25 @@ void eeprom_save_task(void)
 			get_global_data_parameter_config_status(i, &parameter_config);
 
 			if(parameter_config == true) {
-				LED_OFF(TOGGLE_DEBUG);
+				int eeprom_status;
+				save_global_data_into_eeprom(i, &eeprom_status);
 
-				save_global_data_into_eeprom(i);
-
-				LED_ON(TOGGLE_DEBUG);
+				if(eeprom_status == 0) {
+					eeprom_failed = true;
+				}
 			}
 		}
 
 		uint8_t global_data_count = get_global_data_count();
 		eeprom.write(&global_data_count, 0, 1);
+
+		if(eeprom_failed == false) {
+			if(task_has_been_suspended == false) {
+				send_mavlink_status_text_message("Successfully saved datas into EEPROM", MAV_SEVERITY_INFO);
+			}
+		} else {
+			send_mavlink_status_text_message("EEPROM save is failed", MAV_SEVERITY_ERROR);
+		}
 
 		eeprom_task_is_running = false;
 

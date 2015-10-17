@@ -492,8 +492,6 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 
 	if(error_flag) {
 		return EEPROM_I2C_FAILED;
-
-		//TODO:Broadcast the error message via MAVLink
 	}
 
 	return EEPROM_SUCCESS;
@@ -568,8 +566,6 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 
 	if(error_flag) {
 		return EEPROM_I2C_FAILED;
-
-		//TODO:Broadcast the error message via MAVLink
 	}
 
 	return EEPROM_SUCCESS;

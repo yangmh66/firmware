@@ -313,7 +313,7 @@ int get_global_data_eeprom_address(int index, uint16_t *eeprom_address)
 	return GLOBAL_SUCCESS;
 }
 
-int save_global_data_into_eeprom(int index)
+int save_global_data_into_eeprom(int index, int *eeprom_success)
 {
         /* Index is in the range or not */
 	if((index < 0) || (index >= GLOBAL_DATA_CNT))
@@ -411,12 +411,18 @@ int save_global_data_into_eeprom(int index)
 		if(checksum_verify != checksum) {
 			data_is_correct = false;
 			EEPROM_DEBUG_PRINT("<Checksum ERROR>\n\r");
+
+			*eeprom_success = 0;
 		}
 
-		if(data_is_correct == false)
+		if(data_is_correct == false) {
 			EEPROM_DEBUG_PRINT("[address : %d]Data check is failed\n\r", eeprom_address); //TODO:Data is not correct, handle this situation!
-		else {
+
+			*eeprom_success = 0;
+		} else {
 			EEPROM_DEBUG_PRINT("[address : %d] write : ", eeprom_address);
+
+			*eeprom_success = 1;
 
 			int i;
 			for(i = 0; i < 4; i++) {
