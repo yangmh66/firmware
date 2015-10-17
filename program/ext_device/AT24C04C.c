@@ -137,9 +137,9 @@ static void handle_eeprom_write_request(void)
 			i2c1_dma_tx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
 	
 			if(error_flag) {
-				/* Fail to receive 1-byte data */
+				/* Fail to enable the DMA */
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-				eeprom_device_info.exit_status = EEPROM_I2C_FAILED;
+				eeprom_device_info.exit_status = EEPROM_I2C_DMA_FAILED;
 				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 			}
 		}
@@ -153,7 +153,7 @@ static void handle_eeprom_write_request(void)
 
 			/* Clear device information */
 			eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-			eeprom_device_info.exit_status = I2C_SUCCESS;
+			eeprom_device_info.exit_status = EEPROM_I2C_SUCCESS;
 
 			xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 		}
@@ -251,7 +251,7 @@ static void handle_eeprom_read_request(void)
 			if(error_flag) {
 				/* Fail to receive 1-byte data */
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-				eeprom_device_info.exit_status = EEPROM_I2C_FAILED;
+				eeprom_device_info.exit_status = EEPROM_I2C_RXNE_FAILED;
 				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 
 				break;
@@ -262,7 +262,7 @@ static void handle_eeprom_read_request(void)
 
 			/* Update device information */
 			eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-			eeprom_device_info.exit_status = I2C_SUCCESS;
+			eeprom_device_info.exit_status = EEPROM_I2C_SUCCESS;
 
 			xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 		}
@@ -278,9 +278,9 @@ static void handle_eeprom_read_request(void)
 			i2c1_dma_rx_setup(eeprom_device_info.buffer, eeprom_device_info.buffer_count);
 
 			if(error_flag) {
-				/* Fail to receive 1-byte data */
+				/* Fail to enable the DMA */
 				eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-				eeprom_device_info.exit_status = EEPROM_I2C_FAILED;
+				eeprom_device_info.exit_status = EEPROM_I2C_DMA_FAILED;
 				xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
 			}
 		}
@@ -322,7 +322,7 @@ void DMA1_Stream0_IRQHandler(void)
 		I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
 
 		eeprom_device_info.operating_type = EEPROM_DEVICE_IDLE;
-		eeprom_device_info.exit_status = I2C_SUCCESS;
+		eeprom_device_info.exit_status = EEPROM_I2C_SUCCESS;
 
 		xSemaphoreGiveFromISR(eeprom_sem, &higher_priority_task_woken);
   	}
@@ -351,7 +351,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 		I2C_SoftwareResetCmd(I2C1, ENABLE);
 		vTaskDelay(MILLI_SECOND_TICK);
 
-		return I2C_BUSY_FAILED;
+		return EEPROM_I2C_BUSY_FAILED;
 	}
 
 	uint8_t send_buffer[EEPROM_PAGE_SIZE + 1] = {0}; //Reserve 1 for word address
@@ -378,7 +378,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 
 		//XXX:Debug print
 
-		return I2C_TIMEOUT_FAILED;
+		return EEPROM_I2C_TIMEOUT_FAILED;
 	}
 
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
@@ -406,7 +406,7 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 		I2C_SoftwareResetCmd(I2C1, ENABLE);
 		vTaskDelay(MILLI_SECOND_TICK);
 
-		return I2C_BUSY_FAILED;
+		return EEPROM_I2C_BUSY_FAILED;
 	}
 
 	/* Set EEPROM device information */
@@ -429,7 +429,7 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 
 		//XXX:Debug print
 
-		return I2C_TIMEOUT_FAILED;
+		return EEPROM_I2C_TIMEOUT_FAILED;
 	}
 
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
@@ -484,7 +484,8 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		/* Write the data in current page */
 		if(data_left >= page_left_space) {
 			/* Fill the full page by writing data */
-			TIMED(0xFF, eeprom_page_write(&data[count - data_left], device_address, word_address, page_left_space) != I2C_SUCCESS);
+			TIMED(0xFF, eeprom_page_write(&data[count - data_left], device_address, word_address, page_left_space)
+				!= EEPROM_I2C_SUCCESS);
 
 			data_left -= EEPROM_PAGE_SIZE - current_page_write_byte;
 
@@ -493,7 +494,8 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			current_page_write_byte = 0;
 		} else {
 			/* Write the data into current page */
-			TIMED(0xFF, eeprom_page_write(&data[count - data_left], device_address, word_address, data_left) != I2C_SUCCESS);
+			TIMED(0xFF, eeprom_page_write(&data[count - data_left], device_address, word_address, data_left)
+				!= EEPROM_I2C_SUCCESS);
 
 			/* Increase the EEPROM page offset */
 			current_page_write_byte += data_left;
@@ -501,7 +503,7 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 	}
 
 	if(error_flag) {
-		return EEPROM_I2C_FAILED;
+		return EEPROM_FAILED;
 	}
 
 	return EEPROM_SUCCESS;
@@ -552,7 +554,8 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		/* Read the data from the page */
 		if(data_left >= page_left_space) {
 			/* The page is going to full */
-			TIMED(0xFF, eeprom_sequential_read(buffer, device_address, word_address, page_left_space) != I2C_SUCCESS);
+			TIMED(0xFF, eeprom_sequential_read(buffer, device_address, word_address, page_left_space)
+				!= EEPROM_I2C_SUCCESS);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, page_left_space);
@@ -564,7 +567,8 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		} else {
 			/* There will be some empty space in this page after the read
 			   operation */
-			TIMED(0xFF, eeprom_sequential_read(buffer, device_address, word_address, data_left) != I2C_SUCCESS);
+			TIMED(0xFF, eeprom_sequential_read(buffer, device_address, word_address, data_left)
+				!= EEPROM_I2C_SUCCESS);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, data_left);
@@ -575,7 +579,7 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 	}
 
 	if(error_flag) {
-		return EEPROM_I2C_FAILED;
+		return EEPROM_FAILED;
 	}
 
 	return EEPROM_SUCCESS;
