@@ -390,10 +390,12 @@ int save_global_data_into_eeprom(int index, int *eeprom_return_status)
 
 	/* Data check result (payload & checksum) */
 	if(data_is_correct == false) {
-		*eeprom_return_status = 0;
+		*eeprom_return_status = EEPROM_DATA_CHECK_FAILED;
 
 		EEPROM_DEBUG_PRINT("[address: %d]Data check failure\n\r", eeprom_address);
 	} else {
+		*eeprom_return_status = EEPROM_SUCCESS;
+
 		//XXX: float only ...
 		EEPROM_DEBUG_PRINT("[Address: %d - Value: %f]", eeprom_address, (double)data_eeprom.float_value);
 		EEPROM_DEBUG_PRINT("%d %d %d %d (%d)", buffer_verify[0], buffer_verify[1], buffer_verify[2], buffer_verify[3], checksum_verify);
