@@ -2,9 +2,10 @@
 #include "task.h"
 
 #include "delay.h"
+#include "io.h"
 
 #include "global.h"
-#include "communication.h"
+#include "mavlink_manager.h"
 #include "mission.h"
 #include "parameter.h"
 #include "radio_control.h"

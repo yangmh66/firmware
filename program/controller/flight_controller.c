@@ -2,9 +2,9 @@
 
 #include <stdbool.h>
 
-#include "communication.h"
-
 #include "flight_controller.h"
+
+#include "mavlink_manager.h"
 #include "eeprom_task.h"
 
 	/* GPS localizer initialization */
@@ -205,8 +205,6 @@ void flight_control_task(void)
 			set_global_data_value(GPS_VZ, INT16, DATA_CAST((int16_t) (vertical_filtered_data.Zd*1.0f) ));
 			update_system_time();
 
-			uart2_tx_stream_dma_trigger();
-			uart3_tx_stream_dma_trigger();
 			LED_ON(LED4);
 			LED_ON(TOGGLE_DEBUG);
 

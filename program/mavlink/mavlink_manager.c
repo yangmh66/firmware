@@ -17,7 +17,7 @@
 
 #include "global.h"
 
-#include "communication.h"
+#include "mavlink_manager.h"
 #include "generic.h"
 #include "parameter.h"
 #include "mission.h"
@@ -47,7 +47,7 @@ uint8_t broadcast_task_buffer[MAVLINK_MAX_PAYLOAD_LEN];
 uint32_t receiver_sleep_time;
 
 /* Mavlink broadcast information */
-broadcast_message_t boradcast_message_list[] = {
+broadcast_message_t broadcast_message_list[] = {
 	BROADCAST_MSG_DEF(send_heartbeat_info, RATE_HZ(1)),
 	BROADCAST_MSG_DEF(send_gps_info, RATE_HZ(1)),
 	BROADCAST_MSG_DEF(send_debug_status_text_message, RATE_HZ(1)),
@@ -310,11 +310,11 @@ void mavlink_broadcast_task()
 	uint32_t current_time;
 
 	unsigned int i;
-	uint32_t compare_tick_time = boradcast_message_list[0].period_tick;
+	uint32_t compare_tick_time = broadcast_message_list[0].period_tick;
 	for(i = 1; i < BROADCAST_MESSAGE_CNT; i++) {
 		//Find the minimum tick value in the list
-		if(boradcast_message_list[i].period_tick < compare_tick_time) {
-			compare_tick_time = boradcast_message_list[i].period_tick;	
+		if(broadcast_message_list[i].period_tick < compare_tick_time) {
+			compare_tick_time = broadcast_message_list[i].period_tick;	
 		}
 	}
 
@@ -326,12 +326,12 @@ void mavlink_broadcast_task()
 			current_time = get_system_time_ms();
 
 			/* Timeout check */
-			if((current_time - boradcast_message_list[i].last_send_time) >=
-				boradcast_message_list[i].period_tick)
+			if((current_time - broadcast_message_list[i].last_send_time) >=
+				broadcast_message_list[i].period_tick)
 			{
 				/* Send message and update timer */
-				boradcast_message_list[i].send_message();
-				boradcast_message_list[i].last_send_time = current_time;
+				broadcast_message_list[i].send_message();
+				broadcast_message_list[i].last_send_time = current_time;
 			}
 		}
 

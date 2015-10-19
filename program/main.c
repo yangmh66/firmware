@@ -17,8 +17,9 @@
 #include "timers.h"
 
 #include "global.h"
-#include "communication.h"
+#include "mavlink_manager.h"
 #include "eeprom_task.h"
+
 #include "system_time.h"
 #include "lea6h_ubx.h"
 
@@ -135,9 +136,17 @@ int main(void)
 
 	xTaskCreate(
 		(pdTASK_CODE)gps_receive_task,
-
 		(signed portCHAR *) "gps receive task",
 		2048,
+		NULL,
+		tskIDLE_PRIORITY + 8, NULL
+
+	);
+
+	xTaskCreate(
+		(pdTASK_CODE)UART_TX_service_task,
+		(signed portCHAR *) "uart service task",
+		512,
 		NULL,
 		tskIDLE_PRIORITY + 8, NULL
 
