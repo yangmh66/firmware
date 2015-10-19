@@ -374,6 +374,7 @@ int save_global_data_into_eeprom(int index, int *eeprom_return_status)
 	uint8_t buffer_verify[5]; //FIXME:Hard code
 	uint8_t checksum_verify;
 	eeprom.read(buffer_verify, eeprom_address, data_len + 1); //Plus lenght by 1 for checksum
+	memcpy(&data_eeprom, buffer_verify, data_len); //XXX
 	memcpy(&checksum_verify, buffer_verify + data_len, 1); //Checksum part
 
 	bool data_is_correct = true;
@@ -397,8 +398,8 @@ int save_global_data_into_eeprom(int index, int *eeprom_return_status)
 		*eeprom_return_status = EEPROM_SUCCESS;
 
 		//XXX: float only ...
-		EEPROM_DEBUG_PRINT("[Address: %d - Value: %f]", eeprom_address, (double)data_eeprom.float_value);
-		EEPROM_DEBUG_PRINT("%d %d %d %d (%d)", buffer_verify[0], buffer_verify[1], buffer_verify[2], buffer_verify[3], checksum_verify);
+		EEPROM_DEBUG_PRINT("[address: %d][value: %f] ", eeprom_address, (double)data_eeprom.float_value);
+		EEPROM_DEBUG_PRINT("[payload: %d %d %d %d][checksum: %d]\n\r", buffer_verify[0], buffer_verify[1], buffer_verify[2], buffer_verify[3], checksum_verify);
 	}
 
 	/* Set up the first byte of eeprom (data = global data count) */
