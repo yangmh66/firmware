@@ -313,17 +313,21 @@ int get_global_data_eeprom_address(int index, uint16_t *eeprom_address)
 	return GLOBAL_SUCCESS;
 }
 
-int save_global_data_into_eeprom(int index, int *eeprom_success)
+int save_global_data_into_eeprom(int index, int *eeprom_return_status)
 {
         /* Index is in the range or not */
 	if((index < 0) || (index >= GLOBAL_DATA_CNT))
 		return GLOBAL_ERROR_INDEX_OUT_RANGE;
 
-	uint8_t *buffer;
-	uint16_t eeprom_address;
-	uint8_t data_len;
-	uint8_t checksum;
+	/* No need to save! */
+	if(global_mav_data_list[index].parameter_config == false) {
+		return GLOBAL_SUCCESS;
+	}
 
+	uint8_t *buffer;
+	uint8_t data_len;
+
+	/* Identify the data type */
 	switch(global_mav_data_list[index].type) {
 	    case UINT8:
 		buffer = (uint8_t *)&global_mav_data_list[index].data.uint8_value;
@@ -355,87 +359,49 @@ int save_global_data_into_eeprom(int index, int *eeprom_success)
 		break;
 	}
 
-	if(global_mav_data_list[index].parameter_config == true) {
-		//Get the eeprom address
-		eeprom_address = global_mav_data_list[index].eeprom_address;
+	//Get the eeprom address
+	uint16_t eeprom_address = global_mav_data_list[index].eeprom_address;
 
-		//Generate checksum data
-		checksum = checksum_generate(buffer, data_len);
+	//Generate checksum data
+	uint8_t checksum = checksum_generate(buffer, data_len);
 
-		/* Write the data into the eeprom */
-		eeprom.write(buffer, eeprom_address, data_len); //Payload, n byte
-		eeprom.write(&checksum, eeprom_address + data_len, 1); //Checksum, 1 byte
+	/* Write the data (payload & checksum) */
+	eeprom.write(buffer, eeprom_address, data_len); //Payload bytes
+	eeprom.write(&checksum, eeprom_address + data_len, 1); //Checksum byte
 
-		/* Verify the data */
-		Data data_eeprom;
-		uint8_t buffer_verify[5]; //Hard code, the max size of the multiple data type
-		uint8_t checksum_verify;
-		bool data_is_correct;
+	/* Read the written data (payload & checksum) */
+	Data data_eeprom;
+	uint8_t buffer_verify[5]; //FIXME:Hard code
+	uint8_t checksum_verify;
+	eeprom.read(buffer_verify, eeprom_address, data_len + 1); //Plus lenght by 1 for checksum
+	memcpy(&checksum_verify, buffer_verify + data_len, 1); //Checksum part
 
-		eeprom.read(buffer_verify, eeprom_address, data_len + 1); //Plus 1 for checksum
-		memcpy(&data_eeprom, buffer_verify, data_len);
-		memcpy(&checksum_verify, buffer_verify + data_len, 1);
+	bool data_is_correct = true;
 
-		//TODO: The code is too long, improve this!
-		switch(global_mav_data_list[index].type) {
-		    case UINT8:
-			if(global_mav_data_list[index].data.uint8_value == data_eeprom.uint8_value)
-				data_is_correct = true;
-			break;
-		    case INT8:
-			if(global_mav_data_list[index].data.int8_value == data_eeprom.int8_value)
-				data_is_correct = true;
-			break;
-		    case UINT16:
-			if(global_mav_data_list[index].data.uint16_value == data_eeprom.uint16_value)
-				data_is_correct = true;
-			break;
-		    case INT16:
-			if(global_mav_data_list[index].data.int16_value == data_eeprom.int16_value)
-				data_is_correct = true;
-			break;
-		    case UINT32:
-			if(global_mav_data_list[index].data.uint32_value == data_eeprom.uint32_value)
-				data_is_correct = true;
-			break;
-		    case INT32:
-			if(global_mav_data_list[index].data.int32_value == data_eeprom.int32_value)
-				data_is_correct = true;
-			break;
-		    case FLOAT:
-			if(fabs(global_mav_data_list[index].data.float_value - data_eeprom.float_value) <= 0.0001)
-				data_is_correct = true;
-			break;
-		}
+	/* Payload check */
+	if(memcmp(buffer, buffer_verify, data_len) != 0) {
+		data_is_correct = false;
+	}
 
-		if(checksum_verify != checksum) {
-			data_is_correct = false;
-			EEPROM_DEBUG_PRINT("<Checksum ERROR>\n\r");
+	/* Checksum test */
+	if(checksum_verify != checksum) {
+		data_is_correct = false;
+	}
 
-			*eeprom_success = 0;
-		}
+	/* Data check result (payload & checksum) */
+	if(data_is_correct == false) {
+		*eeprom_return_status = 0;
 
-		if(data_is_correct == false) {
-			EEPROM_DEBUG_PRINT("[address : %d]Data check is failed\n\r", eeprom_address); //TODO:Data is not correct, handle this situation!
+		EEPROM_DEBUG_PRINT("[address: %d]Data check failure\n\r", eeprom_address);
+	} else {
+		//XXX: float only ...
+		EEPROM_DEBUG_PRINT("[Address: %d - Value: %f]", eeprom_address, (double)data_eeprom.float_value);
+		EEPROM_DEBUG_PRINT("%d %d %d %d (%d)", buffer_verify[0], buffer_verify[1], buffer_verify[2], buffer_verify[3], checksum_verify);
+	}
 
-			*eeprom_success = 0;
-		} else {
-			EEPROM_DEBUG_PRINT("[address : %d] write : ", eeprom_address);
-
-			*eeprom_success = 1;
-
-			int i;
-			for(i = 0; i < 4; i++) {
-				EEPROM_DEBUG_PRINT("%d ", buffer_verify[i]);
-			}
-
-			EEPROM_DEBUG_PRINT("-> value : %f (%d)\n\r", (double)data_eeprom.float_value, checksum_verify);
-		}
-
-		/* Set up the first byte of eeprom (data = global data count) */
-		if(eeprom_is_written == false) {
-			eeprom_is_written = true;
-		}
+	/* Set up the first byte of eeprom (data = global data count) */
+	if(eeprom_is_written == false) {
+		eeprom_is_written = true;
 	}
 
 	return GLOBAL_SUCCESS;
