@@ -26,7 +26,7 @@
 #include "system_time.h"
 #include "io.h"
 
-#define SEND_DEBUG_MAVLINK_STATUS_MSG 1
+#define SEND_DEBUG_MAVLINK_STATUS_MSG 0
 
 static void send_heartbeat_info(void);
 static void send_gps_info(void);
