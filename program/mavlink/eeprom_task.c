@@ -92,10 +92,9 @@ void eeprom_save_task(void)
 			get_global_data_parameter_config_status(i, &parameter_config);
 
 			if(parameter_config == true) {
-				int eeprom_return_status;
-				save_global_data_into_eeprom(i, &eeprom_return_status);
+				int save_status = save_global_data_into_eeprom(i);
 
-				if(eeprom_return_status != EEPROM_SUCCESS) {
+				if(save_status != GLOBAL_EEPROM_SUCCESS) {
 					eeprom_failed = true;
 				}
 			}

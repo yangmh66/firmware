@@ -83,7 +83,8 @@ typedef enum {
 	GLOBAL_EEPROM_SUCCESS,
 	GLOBAL_EEPROM_INDEX_OUT_RANGE,
 	GLOBAL_EEPROM_INVALID_ADDRESS,
-	GLOBAL_EEPROM_I2C_FAILED,
+	GLOBAL_EEPROM_I2C_WRITE_FAILED,
+	GLOBAL_EEPROM_I2C_READ_FAILED,
 	GLOBAL_EEPROM_DATA_CHECK_FAILED,
 	GLOBAL_EEPROM_CHECKSUM_TEST_FAILED
 } Global_EEPROM_Status;
@@ -138,7 +139,7 @@ int read_global_data_name(int index, char **name);
 int read_global_data_value(int index, Data *value);
 int set_global_data_eeprom_address(int index, uint16_t eeprom_address);
 int get_global_data_eeprom_address(int index, uint16_t *eeprom_address);
-int save_global_data_into_eeprom(int index, int *eeprom_return_status);
+int save_global_data_into_eeprom(int index);
 void load_global_data_from_eeprom(void);
 void set_eeprom_pending_flag(void);
 void clear_eeprom_pending_flag(void);

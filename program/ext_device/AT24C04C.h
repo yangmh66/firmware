@@ -23,13 +23,13 @@
 #define EEPROM_RX_DMA_FLAG_TCIF DMA_FLAG_TCIF0
 
 enum {
-	/* High level */
+	/* High level interface return value */
 	EEPROM_SUCCESS,
 	EEPROM_INVALID_ADDRESS,
 	EEPROM_BUFFER_OVERFLOW,
 	EEPROM_DATA_CHECK_FAILED,
 	EEPROM_FAILED,
-	/* Low level */
+	/* Low level interface return value */
 	EEPROM_I2C_SUCCESS,
 	EEPROM_I2C_BUSY_FAILED,
 	EEPROM_I2C_RXNE_FAILED,

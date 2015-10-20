@@ -313,15 +313,15 @@ int get_global_data_eeprom_address(int index, uint16_t *eeprom_address)
 	return GLOBAL_SUCCESS;
 }
 
-int save_global_data_into_eeprom(int index, int *eeprom_return_status)
+int save_global_data_into_eeprom(int index)
 {
         /* Index is in the range or not */
 	if((index < 0) || (index >= GLOBAL_DATA_CNT))
-		return GLOBAL_ERROR_INDEX_OUT_RANGE;
+		return GLOBAL_EEPROM_INDEX_OUT_RANGE;
 
 	/* No need to save! */
 	if(global_mav_data_list[index].parameter_config == false) {
-		return GLOBAL_SUCCESS;
+		return GLOBAL_EEPROM_SUCCESS; //XXX
 	}
 
 	uint8_t *buffer;
@@ -365,41 +365,45 @@ int save_global_data_into_eeprom(int index, int *eeprom_return_status)
 	//Generate checksum data
 	uint8_t checksum = checksum_generate(buffer, data_len);
 
-	/* Write the data (payload & checksum) */
-	eeprom.write(buffer, eeprom_address, data_len); //Payload bytes
-	eeprom.write(&checksum, eeprom_address + data_len, 1); //Checksum byte
+	/* Write payload datas into EEPROM */
+	int eeprom_status = eeprom.write(buffer, eeprom_address, data_len);
 
-	/* Read the written data (payload & checksum) */
+	if(eeprom_status != EEPROM_SUCCESS) {
+		return GLOBAL_EEPROM_I2C_WRITE_FAILED;
+	}
+
+	/* Write checksum data into EEPROM */
+	eeprom_status = eeprom.write(&checksum, eeprom_address + data_len, 1);
+
+	if(eeprom_status != EEPROM_SUCCESS) {
+		return GLOBAL_EEPROM_I2C_WRITE_FAILED;
+	}
+
+	/* Read the written data from EEPROM (payload + checksum) */
+	uint8_t buffer_verify[5];
+	eeprom_status = eeprom.read(buffer_verify, eeprom_address, data_len + 1); //Reserve 1-byte for checksum
+
+	if(eeprom_status != EEPROM_SUCCESS) {
+		return GLOBAL_EEPROM_I2C_READ_FAILED;
+	}
+
+	/* XXX:Seperate the payload part from the read datas */
 	Data data_eeprom;
-	uint8_t buffer_verify[5]; //FIXME:Hard code
-	uint8_t checksum_verify;
-	eeprom.read(buffer_verify, eeprom_address, data_len + 1); //Plus lenght by 1 for checksum
-	memcpy(&data_eeprom, buffer_verify, data_len); //XXX
-	memcpy(&checksum_verify, buffer_verify + data_len, 1); //Checksum part
+	memcpy(&data_eeprom, buffer_verify, data_len);
 
-	bool data_is_correct = true;
+	/* Seperate the checksum part from the read data */
+	uint8_t checksum_verify;
+	memcpy(&checksum_verify, buffer_verify + data_len, 1); //Checksum part
 
 	/* Payload check */
 	if(memcmp(buffer, buffer_verify, data_len) != 0) {
-		data_is_correct = false;
+		EEPROM_DEBUG_PRINT("[address: %d]Data check failure\n\r", eeprom_address);
+		return GLOBAL_EEPROM_DATA_CHECK_FAILED;
 	}
 
 	/* Checksum test */
 	if(checksum_verify != checksum) {
-		data_is_correct = false;
-	}
-
-	/* Data check result (payload & checksum) */
-	if(data_is_correct == false) {
-		*eeprom_return_status = EEPROM_DATA_CHECK_FAILED;
-
-		EEPROM_DEBUG_PRINT("[address: %d]Data check failure\n\r", eeprom_address);
-	} else {
-		*eeprom_return_status = EEPROM_SUCCESS;
-
-		//XXX: float only ...
-		EEPROM_DEBUG_PRINT("[address: %d][value: %f] ", eeprom_address, (double)data_eeprom.float_value);
-		EEPROM_DEBUG_PRINT("[payload: %d %d %d %d][checksum: %d]\n\r", buffer_verify[0], buffer_verify[1], buffer_verify[2], buffer_verify[3], checksum_verify);
+		return GLOBAL_EEPROM_CHECKSUM_TEST_FAILED;
 	}
 
 	/* Set up the first byte of eeprom (data = global data count) */
@@ -407,7 +411,20 @@ int save_global_data_into_eeprom(int index, int *eeprom_return_status)
 		eeprom_is_written = true;
 	}
 
-	return GLOBAL_SUCCESS;
+	EEPROM_DEBUG_PRINT("[address: %d][value: %f] ",
+		eeprom_address,
+		(double)data_eeprom.float_value
+	);
+
+	EEPROM_DEBUG_PRINT("[payload: %d %d %d %d][checksum: %d]\n\r",
+		buffer_verify[0],
+		buffer_verify[1],
+		buffer_verify[2],
+		buffer_verify[3],
+		checksum_verify
+	);
+
+	return GLOBAL_EEPROM_SUCCESS;
 }
 
 void load_global_data_from_eeprom(void)
