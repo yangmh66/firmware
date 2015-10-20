@@ -9,7 +9,7 @@
 #define DATA_CAST(data) (Data )(data)
 #define DATA_POINTER_CAST(data) (Data *)(data)
 
-#define USE_EEPROM_DEBUG_PRINT 1
+#define USE_EEPROM_DEBUG_PRINT 0
 
 #if USE_EEPROM_DEBUG_PRINT == 1
 	#define EEPROM_DEBUG_PRINT printf
@@ -77,8 +77,16 @@ enum {
 typedef enum {
 	GLOBAL_SUCCESS,
 	GLOBAL_ERROR_INDEX_OUT_RANGE,
-	GLOBAL_EEPROM_INVALID_ADDRESS
 } GlobalExitStatus;
+
+typedef enum {
+	GLOBAL_EEPROM_SUCCESS,
+	GLOBAL_EEPROM_INDEX_OUT_RANGE,
+	GLOBAL_EEPROM_INVALID_ADDRESS,
+	GLOBAL_EEPROM_I2C_FAILED,
+	GLOBAL_EEPROM_DATA_CHECK_FAILED,
+	GLOBAL_EEPROM_CHECKSUM_TEST_FAILED
+} Global_EEPROM_Status;
 
 /* Data type, map as the mavlink message type */
 typedef enum { 
