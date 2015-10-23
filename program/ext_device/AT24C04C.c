@@ -481,11 +481,16 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		//Set word address bit 1 to 4
 		word_address |= current_page_write_byte;
 
+		int eeprom_status;
+
 		/* Write the data in current page */
 		if(data_left >= page_left_space) {
 			/* Fill the full page by writing data */
-			TIMED(0xFF, eeprom_page_write(&data[count - data_left], device_address, word_address, page_left_space)
-				!= EEPROM_I2C_SUCCESS);
+			TIMED(
+				0xFF,
+				(eeprom_status = eeprom_page_write(&data[count - data_left], device_address, word_address, page_left_space))
+					!= EEPROM_I2C_SUCCESS
+			);
 
 			data_left -= EEPROM_PAGE_SIZE - current_page_write_byte;
 
@@ -494,8 +499,11 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			current_page_write_byte = 0;
 		} else {
 			/* Write the data into current page */
-			TIMED(0xFF, eeprom_page_write(&data[count - data_left], device_address, word_address, data_left)
-				!= EEPROM_I2C_SUCCESS);
+			TIMED(
+				0xFF,
+				(eeprom_status = eeprom_page_write(&data[count - data_left], device_address, word_address, data_left))
+					!= EEPROM_I2C_SUCCESS
+			);
 
 			/* Increase the EEPROM page offset */
 			current_page_write_byte += data_left;
@@ -552,11 +560,16 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 		//Set word address bit 1 to 4;
 		word_address |= current_page_read_byte;
 
+		int eeprom_status;
+
 		/* Read the data from the page */
 		if(data_left >= page_left_space) {
 			/* The page is going to full */
-			TIMED(0xFF, eeprom_sequential_read(buffer, device_address, word_address, page_left_space)
-				!= EEPROM_I2C_SUCCESS);
+			TIMED(
+				0xFF,
+				(eeprom_status = eeprom_sequential_read(buffer, device_address, word_address, page_left_space))
+					!= EEPROM_I2C_SUCCESS
+			);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, page_left_space);
@@ -566,10 +579,12 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			current_read_page++;
 			current_page_read_byte = 0;			
 		} else {
-			/* There will be some empty space in this page after the read
-			   operation */
-			TIMED(0xFF, eeprom_sequential_read(buffer, device_address, word_address, data_left)
-				!= EEPROM_I2C_SUCCESS);
+			/* There will be some empty space in this page after the read operation */
+			TIMED(
+				0xFF,
+				(eeprom_status = eeprom_sequential_read(buffer, device_address, word_address, data_left))
+					!= EEPROM_I2C_SUCCESS
+			);
 
 			/* Return the data */
 			memcpy(data + (count - data_left), buffer, data_left);
