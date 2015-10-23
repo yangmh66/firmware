@@ -43,8 +43,6 @@ bool check_eeprom_save_request(void)
  * This function is create for flight control task to mantain the EEPROM resource! */
 void eeprom_task_execute_by_flight_control(void)
 {
-	clear_eeprom_pending_flag();
-
 	vTaskResume(eeprom_save_task_handle);
 }
 
@@ -52,8 +50,6 @@ void eeprom_task_execute_by_flight_control(void)
  * This function is create for flight control task to mantain the EEPROM resource! */
 void eeprom_task_suspend_by_flight_control(void)
 {
-	set_eeprom_pending_flag();
-
 	task_has_been_suspended = true;
 
 	vTaskSuspend(eeprom_save_task_handle);
