@@ -13,7 +13,7 @@
 
 void eeprom_debug_print(void);
 
-bool eeprom_is_written;
+bool eeprom_had_been_written;
 
 #define QUADCOPTER 0
 int modifiable_data_cnt = 0;
@@ -142,10 +142,16 @@ void init_global_data(void)
 
 void init_global_data_with_eeprom(void)
 {
-	load_global_data_from_eeprom();
+	uint8_t start_byte;
+	eeprom.read(&start_byte, 0, 1);
 
-	if(eeprom_is_written == false)
+	/* The first byte of EEPROM should store the global data count */
+	if(start_byte == get_global_data_count()) {
+		eeprom_had_been_written = true;
+		load_global_data_from_eeprom();
+	} else {
 		eeprom.clear();
+	}
 
 	eeprom_debug_print();
 }
@@ -433,8 +439,8 @@ int save_global_data_into_eeprom(int index)
 	}
 
 	/* Set up the first byte of eeprom (data = global data count) */
-	if(eeprom_is_written == false) {
-		eeprom_is_written = true;
+	if(eeprom_had_been_written == false) {
+		eeprom_had_been_written = true;
 	}
 
 	EEPROM_DEBUG_PRINT("[address: %d][value: %f] ",
@@ -460,9 +466,11 @@ void load_global_data_from_eeprom(void)
 
 	eeprom.read(eeprom_data, 0, 1);
 
-	/* If first byte's value of EEPROM is equal to the global data count, it means 
-	   the EEPROM has been written */	
-	eeprom_is_written = (eeprom_data[0] == get_global_data_count() ? true : false);
+	eeprom_had_been_written = (eeprom_data[0] == get_global_data_count() ? true : false);
+
+	if(eeprom_had_been_written == false) {
+		return;
+	}
 
 	Type type;
 	Data data;
@@ -481,18 +489,18 @@ void load_global_data_from_eeprom(void)
 		uint8_t type_size = global_mav_data_list[i].type_size;
 		get_global_data_type(i, &type);
 
-		if(eeprom_is_written == true) {
-			/* Read the data from the eeprom */
-			eeprom.read(eeprom_data, eeprom_address, type_size + 1);
-			memcpy(&data, eeprom_data, type_size);
-			memcpy(&checksum, eeprom_data + type_size, 1);
+		/* Read the data from the eeprom */
+		eeprom.read(eeprom_data, eeprom_address, type_size + 1);
+		memcpy(&data, eeprom_data, type_size);
+		memcpy(&checksum, eeprom_data + type_size, 1);
 
-			if(checksum_test(eeprom_data, type_size, checksum) == 0) {
-				set_global_data_value(i, type, DATA_CAST(data));
-			} else {
-				EEPROM_DEBUG_PRINT("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
-			}
-		}	
+		if(checksum_test(eeprom_data, type_size, checksum) == 0) {
+			set_global_data_value(i, type, DATA_CAST(data));
+		} else {
+			eeprom_had_been_written = false; //Didn't pass the data check
+
+			EEPROM_DEBUG_PRINT("EEPROM checksum test is failed!\n");
+		}
 	}
 }
 
