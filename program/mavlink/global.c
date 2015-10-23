@@ -318,17 +318,6 @@ int read_global_data_value(int index, Data *value)
 	return GLOBAL_SUCCESS;
 }
 
-int get_global_data_eeprom_address(int index, uint16_t *eeprom_address)
-{
-        /* Index is in the range or not */
-	if((index < 0) || (index >= GLOBAL_DATA_CNT))
-		return GLOBAL_ERROR_INDEX_OUT_RANGE;
-
-	*eeprom_address = global_data[index].eeprom_address;
-
-	return GLOBAL_SUCCESS;
-}
-
 int save_global_data_into_eeprom(int index)
 {
         /* Index is in the range or not */
@@ -486,7 +475,6 @@ void load_global_data_from_eeprom(void)
 void eeprom_debug_print(void)
 {
 	bool parameter_config;
-	uint16_t eeprom_address;
 
 	Data data;
 	uint8_t eeprom_data[5] = {0};
@@ -497,23 +485,21 @@ void eeprom_debug_print(void)
 		get_global_data_parameter_config_status(i, &parameter_config);
 
 		if(parameter_config == true) {
-			get_global_data_eeprom_address(i , &eeprom_address);
-
-			eeprom.read(eeprom_data, eeprom_address, sizeof(float) + 1);
+			eeprom.read(eeprom_data, global_data[i].eeprom_address, sizeof(float) + 1);
 			memcpy(&data, eeprom_data, sizeof(float));
 			memcpy(&checksum, eeprom_data + sizeof(float), 1);
 			
-			EEPROM_DEBUG_PRINT("[address : %d] ", eeprom_address);
+			EEPROM_DEBUG_PRINT("[address : %d] ", global_data[i].eeprom_address);
 
 			for(j = 0; j < 5; j++) {
-				if(j != 4) 
+				if(j != 4)  {
 					EEPROM_DEBUG_PRINT("%d ", eeprom_data[j]);
-				else
+				} else {
 					EEPROM_DEBUG_PRINT("(%d) ", eeprom_data[j]);
+				}
 			}
 
-			EEPROM_DEBUG_PRINT("\n\r");
-			//EEPROM_DEBUG_PRINT("-> value : %f (%d)\n\r", data.float_value, eeprom_data[4]);
+			EEPROM_DEBUG_PRINT("\n\r-> value : %f (%d)\n\r", data.float_value, eeprom_data[4]);
 		}
 	}
 
