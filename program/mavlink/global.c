@@ -14,10 +14,9 @@
 void eeprom_debug_print(void);
 
 bool eeprom_had_been_written;
-
-#define QUADCOPTER 0
 int modifiable_data_cnt = 0;
-global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
+
+global_data_t global_data[GLOBAL_DATA_CNT] = {
 	/* global data information */
 	[VEHICLE_TYPE] = {.name = "vehicle_type", .type = UINT8,
 		.data.uint8_value = QUADCOPTER},
@@ -109,33 +108,33 @@ void init_global_data(void)
 		if(parameter_config == true) {
 			modifiable_data_cnt++;
 
-			global_mav_data_list[i].eeprom_address = eeprom_address;
+			global_data[i].eeprom_address = eeprom_address;
 
-			switch(global_mav_data_list[i].type) {
+			switch(global_data[i].type) {
 			    case UINT8:
-				global_mav_data_list[i].type_size = sizeof(uint8_t);
+				global_data[i].type_size = sizeof(uint8_t);
 				break;
 			    case INT8:
-				global_mav_data_list[i].type_size = sizeof(int8_t);
+				global_data[i].type_size = sizeof(int8_t);
 				break;
 			    case UINT16:
-				global_mav_data_list[i].type_size = sizeof(uint16_t);
+				global_data[i].type_size = sizeof(uint16_t);
 				break;
 			    case INT16:
-				global_mav_data_list[i].type_size = sizeof(int16_t);
+				global_data[i].type_size = sizeof(int16_t);
 				break;
 			    case UINT32:
-				global_mav_data_list[i].type_size = sizeof(uint32_t);
+				global_data[i].type_size = sizeof(uint32_t);
 				break;
 			    case INT32:
-				global_mav_data_list[i].type_size = sizeof(int32_t);
+				global_data[i].type_size = sizeof(int32_t);
 				break;
 			    case FLOAT:
-				global_mav_data_list[i].type_size = sizeof(float);
+				global_data[i].type_size = sizeof(float);
 				break;
 			}
 
-			eeprom_address += global_mav_data_list[i].type_size + 1; //Reserve 1-byte for checksum
+			eeprom_address += global_data[i].type_size + 1; //Reserve 1-byte for checksum
 		}
 	}
 } 
@@ -188,40 +187,40 @@ int set_global_data_value(int index, Type type, Data value)
 		return GLOBAL_ERROR_INDEX_OUT_RANGE;
 
 	/* Set the variable type and value */
-	global_mav_data_list[index].type = type;
+	global_data[index].type = type;
 
 	switch(type) {
 	    case UINT8:
-		global_mav_data_list[index].data.uint8_value = 
+		global_data[index].data.uint8_value = 
 			value.uint8_value;
 		break;
 	    case INT8:
-		global_mav_data_list[index].data.int8_value = 
+		global_data[index].data.int8_value = 
 			value.int8_value;
 		break;
 	    case UINT16:
-		global_mav_data_list[index].data.uint16_value = 
+		global_data[index].data.uint16_value = 
 			value.uint16_value;
 		break;
 	    case INT16:
-		global_mav_data_list[index].data.int16_value = 
+		global_data[index].data.int16_value = 
 			value.int16_value;
 		break;
 	    case UINT32:
-		global_mav_data_list[index].data.uint32_value = 
+		global_data[index].data.uint32_value = 
 			value.uint32_value;
 		break;
 	    case INT32:
-		global_mav_data_list[index].data.int32_value = 
+		global_data[index].data.int32_value = 
 			value.int32_value;
 		break;
 	    case FLOAT:
-		global_mav_data_list[index].data.float_value = 
+		global_data[index].data.float_value = 
 			value.float_value;
 		break;
 	}
 
-	global_mav_data_list[index].updated_flag = true;
+	global_data[index].updated_flag = true;
 
 	return GLOBAL_SUCCESS;
 }
@@ -237,7 +236,7 @@ int get_global_data_type(int index, Type *type)
 	if((index < 0) || (index >= GLOBAL_DATA_CNT))
 		return GLOBAL_ERROR_INDEX_OUT_RANGE;
 
-	*type = global_mav_data_list[index].type;
+	*type = global_data[index].type;
 
 	return GLOBAL_SUCCESS;
 }
@@ -253,7 +252,7 @@ int get_global_data_parameter_config_status(int index, bool *parameter_config)
 	if((index < 0) || (index >= GLOBAL_DATA_CNT))
 		return GLOBAL_ERROR_INDEX_OUT_RANGE;
 
-	*parameter_config = global_mav_data_list[index].parameter_config;
+	*parameter_config = global_data[index].parameter_config;
 
 	return GLOBAL_SUCCESS;
 }
@@ -269,7 +268,7 @@ int read_global_data_name(int index, char **name)
 	if((index < 0) || (index >= GLOBAL_DATA_CNT))
 		return GLOBAL_ERROR_INDEX_OUT_RANGE;
 	
-	*name = global_mav_data_list[index].name;
+	*name = global_data[index].name;
 
 	return GLOBAL_SUCCESS;
 }
@@ -285,34 +284,34 @@ int read_global_data_value(int index, Data *value)
 	if((index < 0) || (index >= GLOBAL_DATA_CNT))
 		return GLOBAL_ERROR_INDEX_OUT_RANGE;
 
-	switch(global_mav_data_list[index].type) {
+	switch(global_data[index].type) {
 	    case UINT8:
 		value->uint8_value = 
-			global_mav_data_list[index].data.uint8_value;
+			global_data[index].data.uint8_value;
 		break;
 	    case INT8:
 		value->int8_value =
-			global_mav_data_list[index].data.int8_value;
+			global_data[index].data.int8_value;
 		break;
 	    case UINT16:
 		value->uint16_value =
-			global_mav_data_list[index].data.uint16_value;
+			global_data[index].data.uint16_value;
 		break;
 	    case INT16:
 		value->int16_value = 
-			global_mav_data_list[index].data.int16_value;
+			global_data[index].data.int16_value;
 		break;
 	    case UINT32:
 		value->uint32_value =
-			global_mav_data_list[index].data.uint32_value;
+			global_data[index].data.uint32_value;
 		break;
 	    case INT32:
 		value->int32_value =
-			global_mav_data_list[index].data.int32_value;
+			global_data[index].data.int32_value;
 		break;
 	    case FLOAT:
 		value->float_value =
-			global_mav_data_list[index].data.float_value;
+			global_data[index].data.float_value;
 		break;
 	}
 
@@ -325,7 +324,7 @@ int get_global_data_eeprom_address(int index, uint16_t *eeprom_address)
 	if((index < 0) || (index >= GLOBAL_DATA_CNT))
 		return GLOBAL_ERROR_INDEX_OUT_RANGE;
 
-	*eeprom_address = global_mav_data_list[index].eeprom_address;
+	*eeprom_address = global_data[index].eeprom_address;
 
 	return GLOBAL_SUCCESS;
 }
@@ -337,7 +336,7 @@ int save_global_data_into_eeprom(int index)
 		return GLOBAL_EEPROM_INDEX_OUT_RANGE;
 
 	/* No need to save! */
-	if(global_mav_data_list[index].parameter_config == false) {
+	if(global_data[index].parameter_config == false) {
 		return GLOBAL_EEPROM_SUCCESS; //XXX
 	}
 
@@ -345,39 +344,39 @@ int save_global_data_into_eeprom(int index)
 	uint8_t data_len;
 
 	/* Identify the data type */
-	switch(global_mav_data_list[index].type) {
+	switch(global_data[index].type) {
 	    case UINT8:
-		buffer = (uint8_t *)&global_mav_data_list[index].data.uint8_value;
+		buffer = (uint8_t *)&global_data[index].data.uint8_value;
 		data_len = sizeof(uint8_t);
 		break;
 	    case INT8:
-		buffer = (uint8_t *)&global_mav_data_list[index].data.int8_value;
+		buffer = (uint8_t *)&global_data[index].data.int8_value;
 		data_len = sizeof(int8_t);
 		break;
 	    case UINT16:
-		buffer = (uint8_t *)&global_mav_data_list[index].data.uint16_value;
+		buffer = (uint8_t *)&global_data[index].data.uint16_value;
 		data_len = sizeof(uint16_t);
 		break;
 	    case INT16:
-		buffer = (uint8_t *)&global_mav_data_list[index].data.int16_value;
+		buffer = (uint8_t *)&global_data[index].data.int16_value;
 		data_len = sizeof(uint16_t);
 		break;
 	    case UINT32:
-		buffer = (uint8_t *)&global_mav_data_list[index].data.uint32_value;
+		buffer = (uint8_t *)&global_data[index].data.uint32_value;
 		data_len = sizeof(uint32_t);
 		break;
 	    case INT32:
-		buffer = (uint8_t *)&global_mav_data_list[index].data.int32_value;
+		buffer = (uint8_t *)&global_data[index].data.int32_value;
 		data_len = sizeof(int32_t);
 		break;
 	    case FLOAT:
-		buffer = (uint8_t *)&global_mav_data_list[index].data.float_value;
+		buffer = (uint8_t *)&global_data[index].data.float_value;
 		data_len = sizeof(float);
 		break;
 	}
 
 	//Get the eeprom address
-	uint16_t eeprom_address = global_mav_data_list[index].eeprom_address;
+	uint16_t eeprom_address = global_data[index].eeprom_address;
 
 	//Generate checksum data
 	uint8_t checksum = checksum_generate(buffer, data_len);
@@ -465,8 +464,8 @@ void load_global_data_from_eeprom(void)
 		}
 
 		/* Get global data's eeprom address, data type and size */
-		uint16_t eeprom_address = global_mav_data_list[i].eeprom_address;
-		uint8_t type_size = global_mav_data_list[i].type_size;
+		uint16_t eeprom_address = global_data[i].eeprom_address;
+		uint8_t type_size = global_data[i].type_size;
 		get_global_data_type(i, &type);
 
 		/* Read the data from the eeprom */
@@ -527,7 +526,7 @@ void eeprom_debug_print(void)
   * @retval None
   */
 void set_global_data_update_flag(int index){
-	global_mav_data_list[index].updated_flag = true;
+	global_data[index].updated_flag = true;
 }
 
 
@@ -537,7 +536,7 @@ void set_global_data_update_flag(int index){
   * @retval None
   */
 void reset_global_data_update_flag(int index){
-	global_mav_data_list[index].updated_flag = false;
+	global_data[index].updated_flag = false;
 }
 
 /**
@@ -546,5 +545,5 @@ void reset_global_data_update_flag(int index){
   * @retval Updated_flag status
   */
 bool check_global_data_update_flag(int index){
-	return global_mav_data_list[index].updated_flag;
+	return global_data[index].updated_flag;
 }
