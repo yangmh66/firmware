@@ -319,21 +319,6 @@ int read_global_data_value(int index, Data *value)
 	return GLOBAL_SUCCESS;
 }
 
-int set_global_data_eeprom_address(int index, uint16_t eeprom_address)
-{
-        /* Index is in the range or not */
-	if((index < 0) || (index >= GLOBAL_DATA_CNT))
-		return GLOBAL_ERROR_INDEX_OUT_RANGE;
-
-	/* Address is valid or not */
-	if(eeprom_address > 1024)
-		return GLOBAL_EEPROM_INVALID_ADDRESS;
-
-	global_mav_data_list[index].eeprom_address = eeprom_address;
-
-	return GLOBAL_SUCCESS;
-}
-
 int get_global_data_eeprom_address(int index, uint16_t *eeprom_address)
 {
         /* Index is in the range or not */
@@ -461,16 +446,11 @@ int save_global_data_into_eeprom(int index)
 
 void load_global_data_from_eeprom(void)
 {
-	uint8_t eeprom_data[5] = {0};
-	uint8_t checksum;	
-
-	eeprom.read(eeprom_data, 0, 1);
-
-	eeprom_had_been_written = (eeprom_data[0] == get_global_data_count() ? true : false);
-
 	if(eeprom_had_been_written == false) {
 		return;
 	}
+
+	uint8_t eeprom_data[5], checksum;	
 
 	Type type;
 	Data data;
@@ -543,7 +523,7 @@ void eeprom_debug_print(void)
 
 /**
   * @brief  Set updated_flag
-  * @param  index (int),
+  * @param  index (int)
   * @retval None
   */
 void set_global_data_update_flag(int index){
@@ -553,7 +533,7 @@ void set_global_data_update_flag(int index){
 
 /**
   * @brief  Unset updated_flag
-  * @param  index (int),
+  * @param  index (int)
   * @retval None
   */
 void reset_global_data_update_flag(int index){
@@ -562,7 +542,7 @@ void reset_global_data_update_flag(int index){
 
 /**
   * @brief  Check global data updated_flag
-  * @param  index (int),
+  * @param  index (int)
   * @retval Updated_flag status
   */
 bool check_global_data_update_flag(int index){
