@@ -500,10 +500,11 @@ int eeprom_write(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			/* Increase the EEPROM page offset */
 			current_page_write_byte += data_left;
 		}
-	}
 
-	if(error_flag) {
-		return EEPROM_FAILED;
+		if(error_flag) {
+			return EEPROM_FAILED;
+		}
+
 	}
 
 	return EEPROM_SUCCESS;
@@ -576,10 +577,11 @@ int eeprom_read(uint8_t *data, uint16_t eeprom_address, uint16_t count)
 			/* Increase the current EEPROM page offset */
 			current_page_read_byte += data_left;
 		}
-	}
 
-	if(error_flag) {
-		return EEPROM_FAILED;
+		if(error_flag) {
+			return EEPROM_FAILED;
+		}
+
 	}
 
 	return EEPROM_SUCCESS;
