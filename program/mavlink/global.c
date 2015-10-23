@@ -329,40 +329,8 @@ int save_global_data_into_eeprom(int index)
 		return GLOBAL_EEPROM_SUCCESS; //XXX
 	}
 
-	uint8_t *buffer;
-	uint8_t data_len;
-
-	/* Identify the data type */
-	switch(global_data[index].type) {
-	    case UINT8:
-		buffer = (uint8_t *)&global_data[index].data.uint8_value;
-		data_len = sizeof(uint8_t);
-		break;
-	    case INT8:
-		buffer = (uint8_t *)&global_data[index].data.int8_value;
-		data_len = sizeof(int8_t);
-		break;
-	    case UINT16:
-		buffer = (uint8_t *)&global_data[index].data.uint16_value;
-		data_len = sizeof(uint16_t);
-		break;
-	    case INT16:
-		buffer = (uint8_t *)&global_data[index].data.int16_value;
-		data_len = sizeof(uint16_t);
-		break;
-	    case UINT32:
-		buffer = (uint8_t *)&global_data[index].data.uint32_value;
-		data_len = sizeof(uint32_t);
-		break;
-	    case INT32:
-		buffer = (uint8_t *)&global_data[index].data.int32_value;
-		data_len = sizeof(int32_t);
-		break;
-	    case FLOAT:
-		buffer = (uint8_t *)&global_data[index].data.float_value;
-		data_len = sizeof(float);
-		break;
-	}
+	uint8_t *buffer = (uint8_t *)&global_data[index].data.uint8_value;
+	uint8_t data_len = global_data[index].type_size;
 
 	//Get the eeprom address
 	uint16_t eeprom_address = global_data[index].eeprom_address;
