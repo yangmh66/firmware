@@ -114,6 +114,7 @@ typedef union {
 typedef struct {
 	/* Data */
 	Type type;
+	int type_size;
 	Data data;
 
 	/* Data name */

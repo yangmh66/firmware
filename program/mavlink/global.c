@@ -97,15 +97,46 @@ global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
 
 void init_global_data(void)
 {
+	uint16_t eeprom_address = 1; //Reserve first byte
+
 	/* Calculate the data count on the ground station parameter
 	   configuration panel */
 	int i;
 	for(i = 0; i < get_global_data_count(); i++) {
 		bool parameter_config;
-
 		get_global_data_parameter_config_status(i, &parameter_config);
-		if(parameter_config == true)
+		
+		if(parameter_config == true) {
 			modifiable_data_cnt++;
+
+			global_mav_data_list[i].eeprom_address = eeprom_address;
+
+			switch(global_mav_data_list[i].type) {
+			    case UINT8:
+				global_mav_data_list[i].type_size = sizeof(uint8_t);
+				break;
+			    case INT8:
+				global_mav_data_list[i].type_size = sizeof(int8_t);
+				break;
+			    case UINT16:
+				global_mav_data_list[i].type_size = sizeof(uint16_t);
+				break;
+			    case INT16:
+				global_mav_data_list[i].type_size = sizeof(int16_t);
+				break;
+			    case UINT32:
+				global_mav_data_list[i].type_size = sizeof(uint32_t);
+				break;
+			    case INT32:
+				global_mav_data_list[i].type_size = sizeof(int32_t);
+				break;
+			    case FLOAT:
+				global_mav_data_list[i].type_size = sizeof(float);
+				break;
+			}
+
+			eeprom_address += global_mav_data_list[i].type_size + 1; //Reserve 1-byte for checksum
+		}
 	}
 } 
 
@@ -424,74 +455,44 @@ int save_global_data_into_eeprom(int index)
 
 void load_global_data_from_eeprom(void)
 {
-	/* Load the data from eeprom */
 	uint8_t eeprom_data[5] = {0};
+	uint8_t checksum;	
+
 	eeprom.read(eeprom_data, 0, 1);
 
 	/* If first byte's value of EEPROM is equal to the global data count, it means 
 	   the EEPROM has been written */	
 	eeprom_is_written = (eeprom_data[0] == get_global_data_count() ? true : false);
 
-	bool parameter_config;
-	/* Start from second byte, 
-	 * First byte: check the eeprom has been use or not */
-	uint16_t eeprom_address = 1;
-	uint8_t checksum;
 	Type type;
-	uint8_t type_size;
 	Data data;
 
 	int i;
 	for(i = 0; i < get_global_data_count(); i++) {
+		bool parameter_config;
 		get_global_data_parameter_config_status(i, &parameter_config);
 
-		if(parameter_config == true) {
-			//Set the eeprom address into the global data
-			set_global_data_eeprom_address(i, eeprom_address);
-
-			get_global_data_type(i, &type);
-
-			/* Get the size of the current global data's data type */
-			switch(type) {
-			    case UINT8:
-				type_size = sizeof(uint8_t);
-				break;
-			    case INT8:
-				type_size = sizeof(int8_t);
-				break;
-			    case UINT16:
-				type_size = sizeof(uint16_t);
-				break;
-			    case INT16:
-				type_size = sizeof(int16_t);
-				break;
-			    case UINT32:
-				type_size = sizeof(uint32_t);
-				break;
-			    case INT32:
-				type_size = sizeof(int32_t);
-				break;
-			    case FLOAT:
-				type_size = sizeof(float);
-				break;
-			}
-
-			if(eeprom_is_written == true) {
-				/* Read the data from the eeprom */
-				eeprom.read(eeprom_data, eeprom_address, type_size + 1);
-				memcpy(&data, eeprom_data, type_size);
-				memcpy(&checksum, eeprom_data + type_size, 1);
-	
-				if(checksum_test(eeprom_data, type_size, checksum) == 0) {
-					set_global_data_value(i, type, DATA_CAST(data));
-				} else {
-					EEPROM_DEBUG_PRINT("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
-				}
-			}
-
-			//One more byte for checksum
-			eeprom_address += type_size + 1;
+		if(parameter_config == false) {
+			continue;
 		}
+
+		/* Get global data's eeprom address, data type and size */
+		uint16_t eeprom_address = global_mav_data_list[i].eeprom_address;
+		uint8_t type_size = global_mav_data_list[i].type_size;
+		get_global_data_type(i, &type);
+
+		if(eeprom_is_written == true) {
+			/* Read the data from the eeprom */
+			eeprom.read(eeprom_data, eeprom_address, type_size + 1);
+			memcpy(&data, eeprom_data, type_size);
+			memcpy(&checksum, eeprom_data + type_size, 1);
+
+			if(checksum_test(eeprom_data, type_size, checksum) == 0) {
+				set_global_data_value(i, type, DATA_CAST(data));
+			} else {
+				EEPROM_DEBUG_PRINT("EEPROM checksum test is failed!\n"); //TODO:Data is not correct, handle this situation!
+			}
+		}	
 	}
 }
 
