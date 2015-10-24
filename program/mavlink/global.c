@@ -406,7 +406,7 @@ void load_global_data_from_eeprom(void)
 		return;
 	}
 
-	uint8_t eeprom_data[5], checksum;	
+	uint8_t eeprom_data[5], eeprom_checksum;
 
 	Type type;
 	Data data;
@@ -428,9 +428,9 @@ void load_global_data_from_eeprom(void)
 		/* Read the data from the eeprom */
 		eeprom.read(eeprom_data, eeprom_address, type_size + 1);
 		memcpy(&data, eeprom_data, type_size);
-		memcpy(&checksum, eeprom_data + type_size, 1);
+		memcpy(&eeprom_checksum, eeprom_data + type_size, 1);
 
-		if(checksum_test(eeprom_data, type_size, checksum) == 0) {
+		if(eeprom_checksum == checksum_generate(eeprom_data, type_size)) {
 			set_global_data_value(i, type, DATA_CAST(data));
 		} else {
 			eeprom_had_been_written = false; //Didn't pass the data check
