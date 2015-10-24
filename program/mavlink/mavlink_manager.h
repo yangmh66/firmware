@@ -14,7 +14,7 @@
 #define RATE_HZ(hz) (1000 / hz)
 
 /* Debug print configuration */
-#define PRINT_MAVLINK_DEBUG_MESSAGE 1
+#define PRINT_MAVLINK_DEBUG_MESSAGE 0
 
 #if PRINT_MAVLINK_DEBUG_MESSAGE != 0
 	#define MAVLINK_DEBUG_PRINT printf
