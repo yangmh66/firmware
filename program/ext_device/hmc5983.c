@@ -123,11 +123,6 @@ void hmc5983_apply_mag_calibration(imu_calibrated_offset_t *imu_offset){
 	imu_offset->mag[1] = (mag_y_min + mag_y_max) / 2;
 	imu_offset->mag[2]= (mag_z_min + mag_z_max) / 2;
 
-	/* Calculate the new scale */
-	imu_offset->mag_scale[0] = 4096.0 / ((fabs(mag_x_min) + fabs(mag_x_max)) / 2);
-	imu_offset->mag_scale[1] = 4096.0 / ((fabs(mag_y_min) + fabs(mag_y_max)) / 2);
-	imu_offset->mag_scale[2] = 4096.0 / ((fabs(mag_z_min) + fabs(mag_z_max)) / 2);
-
 	//Assume the scalue is 1.0
 	imu_offset->mag_scale[0] = 1.0;
 	imu_offset->mag_scale[1] = 1.0;
