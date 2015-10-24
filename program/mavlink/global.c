@@ -11,8 +11,6 @@
 
 #define QUADCOPTER 0
 
-void eeprom_debug_print(void);
-
 bool eeprom_had_been_written;
 int modifiable_data_cnt = 0;
 
@@ -151,8 +149,6 @@ void init_global_data_with_eeprom(void)
 	} else {
 		eeprom.clear();
 	}
-
-	eeprom_debug_print();
 }
 
 /**
@@ -384,7 +380,7 @@ int save_global_data_into_eeprom(int index)
 		eeprom_had_been_written = true;
 	}
 
-	EEPROM_DEBUG_PRINT("[address: %d][value: %f] ",
+	EEPROM_DEBUG_PRINT("[address: %d][value: %f]",
 		eeprom_address,
 		(double)data_eeprom.float_value
 	);
@@ -406,8 +402,6 @@ void load_global_data_from_eeprom(void)
 		return;
 	}
 
-	uint8_t eeprom_data[5], eeprom_checksum;
-
 	Type type;
 	Data data;
 
@@ -426,52 +420,29 @@ void load_global_data_from_eeprom(void)
 		get_global_data_type(i, &type);
 
 		/* Read the data from the eeprom */
+		uint8_t eeprom_data[5], eeprom_checksum;
 		eeprom.read(eeprom_data, eeprom_address, type_size + 1);
 		memcpy(&data, eeprom_data, type_size);
 		memcpy(&eeprom_checksum, eeprom_data + type_size, 1);
 
 		if(eeprom_checksum == checksum_generate(eeprom_data, type_size)) {
 			set_global_data_value(i, type, DATA_CAST(data));
+
+			EEPROM_DEBUG_PRINT("[address: %d][value: %f][payload: %d %d %d %d][checksum: %d]\n\r",
+				global_data[i].eeprom_address,
+				(double)data.float_value,
+				eeprom_data[0],
+				eeprom_data[1],
+				eeprom_data[2],
+				eeprom_data[3],
+				eeprom_checksum
+			);
 		} else {
 			eeprom_had_been_written = false; //Didn't pass the data check
 
 			EEPROM_DEBUG_PRINT("EEPROM checksum test is failed!\n");
 		}
 	}
-}
-
-void eeprom_debug_print(void)
-{
-	bool parameter_config;
-
-	Data data;
-	uint8_t eeprom_data[5] = {0};
-	uint8_t checksum = 0;
-
-	int i, j;
-	for(i = 0; i < get_global_data_count(); i++) {
-		get_global_data_parameter_config_status(i, &parameter_config);
-
-		if(parameter_config == true) {
-			eeprom.read(eeprom_data, global_data[i].eeprom_address, sizeof(float) + 1);
-			memcpy(&data, eeprom_data, sizeof(float));
-			memcpy(&checksum, eeprom_data + sizeof(float), 1);
-			
-			EEPROM_DEBUG_PRINT("[address : %d] ", global_data[i].eeprom_address);
-
-			for(j = 0; j < 5; j++) {
-				if(j != 4)  {
-					EEPROM_DEBUG_PRINT("%d ", eeprom_data[j]);
-				} else {
-					EEPROM_DEBUG_PRINT("(%d) ", eeprom_data[j]);
-				}
-			}
-
-			EEPROM_DEBUG_PRINT("\n\r-> value : %f (%d)\n\r", data.float_value, eeprom_data[4]);
-		}
-	}
-
-	EEPROM_DEBUG_PRINT("\n\r");
 }
 
 /**

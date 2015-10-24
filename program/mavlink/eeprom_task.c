@@ -120,9 +120,10 @@ void eeprom_save_task(void)
 		if(task_has_been_suspended == true && save_request == true) {
 			task_has_been_suspended = false;
 			save_request = false;
-		/* If the old request isn't finished and get a new request, run the process again*/
+		/* If the old request isn't finished and get a new request, run the process again */
 		} else if (new_save_request == true) {
 			new_save_request = false;
+		/* Nothing to do, suspend the task */
 		} else {
 			save_request = false;
 			vTaskSuspend(NULL);
