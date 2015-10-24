@@ -380,12 +380,9 @@ int save_global_data_into_eeprom(int index)
 		eeprom_had_been_written = true;
 	}
 
-	EEPROM_DEBUG_PRINT("[address: %d][value: %f]",
+	EEPROM_DEBUG_PRINT("[Write][address: %d][value: %f][payload: %d %d %d %d][checksum: %d]\n\r",
 		eeprom_address,
-		(double)data_eeprom.float_value
-	);
-
-	EEPROM_DEBUG_PRINT("[payload: %d %d %d %d][checksum: %d]\n\r",
+		(double)data_eeprom.float_value,
 		buffer_verify[0],
 		buffer_verify[1],
 		buffer_verify[2],
@@ -402,7 +399,6 @@ void load_global_data_from_eeprom(void)
 		return;
 	}
 
-	Type type;
 	Data data;
 
 	int i;
@@ -417,7 +413,7 @@ void load_global_data_from_eeprom(void)
 		/* Get global data's eeprom address, data type and size */
 		uint16_t eeprom_address = global_data[i].eeprom_address;
 		uint8_t type_size = global_data[i].type_size;
-		get_global_data_type(i, &type);
+		Type type = global_data[i].type;
 
 		/* Read the data from the eeprom */
 		uint8_t eeprom_data[5], eeprom_checksum;
@@ -428,7 +424,7 @@ void load_global_data_from_eeprom(void)
 		if(eeprom_checksum == checksum_generate(eeprom_data, type_size)) {
 			set_global_data_value(i, type, DATA_CAST(data));
 
-			EEPROM_DEBUG_PRINT("[address: %d][value: %f][payload: %d %d %d %d][checksum: %d]\n\r",
+			EEPROM_DEBUG_PRINT("[Read][address: %d][value: %f][payload: %d %d %d %d][checksum: %d]\n\r",
 				global_data[i].eeprom_address,
 				(double)data.float_value,
 				eeprom_data[0],
