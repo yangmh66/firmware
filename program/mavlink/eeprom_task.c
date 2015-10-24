@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -80,6 +81,7 @@ void eeprom_save_task(void)
 {
 	while(1) {
 		bool eeprom_failed;
+		int eeprom_status;
 
 		eeprom_task_is_running = true;
 
@@ -93,23 +95,28 @@ void eeprom_save_task(void)
 			get_global_data_parameter_config_status(i, &parameter_config);
 
 			if(parameter_config == true) {
-				int save_status = save_global_data_into_eeprom(i);
+				eeprom_status = save_global_data_into_eeprom(i);
 
-				if(save_status != GLOBAL_EEPROM_SUCCESS) {
+				if(eeprom_status != GLOBAL_EEPROM_SUCCESS) {
 					eeprom_failed = true;
+					break;
 				}
 			}
 		}
 
-		uint8_t global_data_count = get_global_data_count();
-		eeprom.write(&global_data_count, 0, 1);
-
 		if(eeprom_failed == false) {
 			if(task_has_been_suspended == false) {
-				send_mavlink_status_text_message("Successfully saved datas into EEPROM", MAV_SEVERITY_INFO);
+				send_mavlink_status_text_message("Successfully saved data into EEPROM", MAV_SEVERITY_INFO);
+
+				/* Setup the first byte because the job is finished */
+				uint8_t global_data_count = get_global_data_count();
+				eeprom.write(&global_data_count, 0, 1);
 			}
 		} else {
-			send_mavlink_status_text_message("EEPROM save is failed", MAV_SEVERITY_ERROR);
+			char error_message[51] = {'\0'};
+			sprintf(error_message, "Failed to save data into EEPROM [Error code: %d]", eeprom_status);
+
+			send_mavlink_status_text_message(error_message, MAV_SEVERITY_ERROR);
 		}
 
 		eeprom_task_is_running = false;
