@@ -20,6 +20,7 @@ extern xTaskHandle eeprom_save_task_handle;
 uint8_t eeprom_task_buffer[MAVLINK_MAX_PAYLOAD_LEN];
 
 bool save_request;
+bool new_save_request; //The old save request isn't finished but get a new request
 bool task_has_been_suspended;
 bool eeprom_task_is_running;
 
@@ -30,6 +31,10 @@ bool eeprom_task_is_running;
   */
 void eeprom_save_request(void)
 {
+	if(save_request == true) {
+		new_save_request = true;
+	}
+
 	save_request = true;
 }
 
@@ -115,6 +120,9 @@ void eeprom_save_task(void)
 		if(task_has_been_suspended == true && save_request == true) {
 			task_has_been_suspended = false;
 			save_request = false;
+		/* If the old request isn't finished and get a new request, run the process again*/
+		} else if (new_save_request == true) {
+			new_save_request = false;
 		} else {
 			save_request = false;
 			vTaskSuspend(NULL);
