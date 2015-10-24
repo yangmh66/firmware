@@ -28,6 +28,7 @@ typedef struct {
 	void (*send_message)(void);
 } broadcast_message_t;
 
+void start_mavlink_receiver_task(void);
 void set_mavlink_receiver_delay_time(uint32_t time);
 
 void receiver_task_send_package(mavlink_message_t *msg);

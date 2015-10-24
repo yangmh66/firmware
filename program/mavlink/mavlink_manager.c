@@ -35,6 +35,8 @@ static void send_reached_waypoint(void);
 static void send_current_waypoint(void);
 static void send_debug_status_text_message(void);
 
+extern xTaskHandle mavlink_receiver_task_handle;
+
 extern int16_t __nav_roll,__nav_pitch;
 extern uint32_t __pAcc,__numSV;
 extern int32_t __altitude_Zd;
@@ -278,6 +280,11 @@ static void handle_message(mavlink_message_t *mavlink_message)
 	}
 }
 
+void start_mavlink_receiver_task(void)
+{
+	vTaskResume(mavlink_receiver_task_handle);
+}
+
 void mavlink_receiver_task(void)
 {
 	int buffer;
@@ -285,8 +292,6 @@ void mavlink_receiver_task(void)
 	
 	mavlink_message_t mavlink_message;
 	mavlink_status_t message_status;
-
-	init_global_data_eeprom();
 
 	while(1) {
 		//Try to receive a byte, if there is no data, the task won't be waken

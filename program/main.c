@@ -26,6 +26,7 @@
 extern uint8_t estimator_trigger_flag;
 
 /* FreeRTOS */
+xTaskHandle mavlink_receiver_task_handle;
 xTaskHandle eeprom_save_task_handle;
 xTimerHandle xTimers[1];
 extern xSemaphoreHandle serial_tx_wait_sem;
@@ -113,7 +114,7 @@ int main(void)
 		2048,
 		NULL,
 		tskIDLE_PRIORITY + 6,
-		NULL
+		&mavlink_receiver_task_handle
 	);
 
 	xTaskCreate(
@@ -152,6 +153,7 @@ int main(void)
 
 	);
 
+	vTaskSuspend(mavlink_receiver_task_handle);
 	vTaskSuspend(eeprom_save_task_handle);
 
 	vTaskStartScheduler();

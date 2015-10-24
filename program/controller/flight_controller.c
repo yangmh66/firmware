@@ -48,6 +48,12 @@ void flight_control_task(void)
 	vertical_pid_t pid_Z_info;
 	nav_pid_t pid_nav_info;
 
+	/* PID gains, calibration data is stored inside the EEPROM, so initialize these devices after this line */
+	init_global_data_eeprom();
+
+	/* Wake up the mavlink receiver task after reading EEPROM data */
+	start_mavlink_receiver_task();
+
 	PID_init(&pid_roll_info,&pid_pitch_info ,&pid_yaw_rate_info ,&pid_heading_info,&pid_Z_info ,&pid_Zd_info,&pid_nav_info);
 
 	attitude_estimator_init(&attitude,&imu_raw_data, &imu_filtered_data,&predicted_g_data);
