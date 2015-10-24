@@ -119,9 +119,9 @@ void hmc5983_apply_mag_calibration(imu_calibrated_offset_t *imu_offset){
 	read_global_data_value(MAG_Z_MAX, DATA_POINTER_CAST(&mag_z_max));
 
 	/* Calculate the offset */
-	imu_offset->mag[0] = (mag_x_min + mag_x_max) / 2;
-	imu_offset->mag[1] = (mag_y_min + mag_y_max) / 2;
-	imu_offset->mag[2]= (mag_z_min + mag_z_max) / 2;
+	imu_offset->mag[0] = (int16_t)((mag_x_min + mag_x_max) / 2);
+	imu_offset->mag[1] = (int16_t)((mag_y_min + mag_y_max) / 2);
+	imu_offset->mag[2]= (int16_t)((mag_z_min + mag_z_max) / 2);
 
 	//Assume the scalue is 1.0
 	imu_offset->mag_scale[0] = 1.0;

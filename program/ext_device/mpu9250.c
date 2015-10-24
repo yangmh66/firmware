@@ -121,9 +121,9 @@ void mpu9250_apply_accel_calibration(imu_calibrated_offset_t *imu_offset){
 	read_global_data_value(ACCEL_Z_MAX, DATA_POINTER_CAST(&accel_z_max));
 
 	/* Calculate the offset */
-	imu_offset->acc[0] = (accel_x_min + accel_x_max) / 2; 
-	imu_offset->acc[1] = (accel_y_min + accel_y_max) / 2;
-	imu_offset->acc[2] = (accel_z_min + accel_z_max) / 2;
+	imu_offset->acc[0] = (int16_t)((accel_x_min + accel_x_max) / 2); 
+	imu_offset->acc[1] = (int16_t)((accel_y_min + accel_y_max) / 2);
+	imu_offset->acc[2] = (int16_t)((accel_z_min + accel_z_max) / 2);
 
 	/* Calculate the new scale */
 	imu_offset->acc_scale[0] = 4096.0 / ((fabs(accel_x_min) + fabs(accel_x_max)) / 2);
