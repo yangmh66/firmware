@@ -137,17 +137,66 @@ void init_global_data(void)
 	}
 } 
 
-void init_global_data_with_eeprom(void)
+void init_global_data_eeprom(void)
 {
 	uint8_t start_byte;
 	eeprom.read(&start_byte, 0, 1);
 
 	/* The first byte of EEPROM should store the global data count */
-	if(start_byte == get_global_data_count()) {
-		eeprom_had_been_written = true;
-		load_global_data_from_eeprom();
-	} else {
+	if(start_byte != get_global_data_count()) {
 		eeprom.clear();
+
+		//XXX:Write default data
+
+		return;
+	}
+
+	eeprom_had_been_written = true;
+
+	int i;
+	for(i = 0; i < get_global_data_count(); i++) {
+		bool parameter_config;
+		get_global_data_parameter_config_status(i, &parameter_config);
+
+		if(parameter_config == false) {
+			continue;
+		}
+
+		/* Get global data's eeprom address, data type and size */
+		uint16_t eeprom_address = global_data[i].eeprom_address;
+		uint8_t type_size = global_data[i].type_size;
+		Type type = global_data[i].type;
+
+		uint8_t eeprom_data[5], eeprom_checksum;
+		Data data;
+
+		/* Read the data from the eeprom */
+		eeprom.read(eeprom_data, eeprom_address, type_size + 1);
+		memcpy(&data, eeprom_data, type_size);
+		memcpy(&eeprom_checksum, eeprom_data + type_size, 1);
+
+		if(eeprom_checksum == checksum_generate(eeprom_data, type_size)) {
+			set_global_data_value(i, type, DATA_CAST(data));
+
+			EEPROM_DEBUG_PRINT("[Read][address: %d][value: %f][payload: %d %d %d %d][checksum: %d]\n\r",
+				global_data[i].eeprom_address,
+				(double)data.float_value,
+				eeprom_data[0],
+				eeprom_data[1],
+				eeprom_data[2],
+				eeprom_data[3],
+				eeprom_checksum
+			);
+		} else {
+			/* Didn't pass the data check, stop reading and clear the EEPROM */
+			eeprom_had_been_written = false;
+	
+			eeprom.clear();
+
+			//XXX:Write default data
+
+			return;
+		}
 	}
 }
 
@@ -393,53 +442,12 @@ int save_global_data_into_eeprom(int index)
 	return GLOBAL_EEPROM_SUCCESS;
 }
 
-void load_global_data_from_eeprom(void)
+#if 0
+int read_global_data_from_eeprom(int index)
 {
-	if(eeprom_had_been_written == false) {
-		return;
-	}
-
-	Data data;
-
-	int i;
-	for(i = 0; i < get_global_data_count(); i++) {
-		bool parameter_config;
-		get_global_data_parameter_config_status(i, &parameter_config);
-
-		if(parameter_config == false) {
-			continue;
-		}
-
-		/* Get global data's eeprom address, data type and size */
-		uint16_t eeprom_address = global_data[i].eeprom_address;
-		uint8_t type_size = global_data[i].type_size;
-		Type type = global_data[i].type;
-
-		/* Read the data from the eeprom */
-		uint8_t eeprom_data[5], eeprom_checksum;
-		eeprom.read(eeprom_data, eeprom_address, type_size + 1);
-		memcpy(&data, eeprom_data, type_size);
-		memcpy(&eeprom_checksum, eeprom_data + type_size, 1);
-
-		if(eeprom_checksum == checksum_generate(eeprom_data, type_size)) {
-			set_global_data_value(i, type, DATA_CAST(data));
-
-			EEPROM_DEBUG_PRINT("[Read][address: %d][value: %f][payload: %d %d %d %d][checksum: %d]\n\r",
-				global_data[i].eeprom_address,
-				(double)data.float_value,
-				eeprom_data[0],
-				eeprom_data[1],
-				eeprom_data[2],
-				eeprom_data[3],
-				eeprom_checksum
-			);
-		} else {
-			eeprom_had_been_written = false; //Didn't pass the data check
-
-			EEPROM_DEBUG_PRINT("EEPROM checksum test is failed!\n");
-		}
-	}
+	return GLOBAL_EEPROM_SUCCESS;
 }
+#endif
 
 /**
   * @brief  Set updated_flag

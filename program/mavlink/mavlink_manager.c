@@ -286,7 +286,7 @@ void mavlink_receiver_task(void)
 	mavlink_message_t mavlink_message;
 	mavlink_status_t message_status;
 
-	init_global_data_with_eeprom();
+	init_global_data_eeprom();
 
 	while(1) {
 		//Try to receive a byte, if there is no data, the task won't be waken

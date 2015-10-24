@@ -536,7 +536,6 @@ static void command_long_handler(mavlink_message_t *mavlink_message)
 	    {
 		if((int)mmcl.param1 == 0) {
 			/* Mavlink EEPROM load request */ 
-			load_global_data_from_eeprom();
 		} else if ((int)mmcl.param1 == 1) {
 			/* Mavlink EEPROM save request */
 			eeprom_save_request();

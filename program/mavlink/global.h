@@ -9,9 +9,9 @@
 #define DATA_CAST(data) (Data )(data)
 #define DATA_POINTER_CAST(data) (Data *)(data)
 
-#define USE_EEPROM_DEBUG_PRINT 0
+#define USE_EEPROM_DEBUG_PRINT 1
 
-#if USE_EEPROM_DEBUG_PRINT == 1
+#if USE_EEPROM_DEBUG_PRINT == 0
 	#define EEPROM_DEBUG_PRINT printf
 #else
 	#define EEPROM_DEBUG_PRINT(...)
@@ -130,7 +130,7 @@ typedef struct {
 
 /* Global data list operating functions */
 void init_global_data(void);
-void init_global_data_with_eeprom(void);
+void init_global_data_eeprom(void);
 int get_global_data_count(void);
 int get_modifiable_data_count(void);
 int set_global_data_value(int index, Type type, Data value);
@@ -138,9 +138,7 @@ int get_global_data_type(int index, Type *type);
 int get_global_data_parameter_config_status(int index, bool *parameter_config);
 int read_global_data_name(int index, char **name);
 int read_global_data_value(int index, Data *value);
-int get_global_data_eeprom_address(int index, uint16_t *eeprom_address);
 int save_global_data_into_eeprom(int index);
-void load_global_data_from_eeprom(void);
 void set_global_data_update_flag(int index);
 void reset_global_data_update_flag(int index);
 bool check_global_data_update_flag(int index);
