@@ -97,7 +97,7 @@ void eeprom_save_task(void)
 			get_global_data_parameter_config_status(i, &parameter_config);
 
 			//Not a user-modifiable parameter
-			if(parameter_config == true) {
+			if(parameter_config == false) {
 				continue;
 			}
 
