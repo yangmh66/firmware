@@ -21,8 +21,10 @@ extern xTaskHandle eeprom_save_task_handle;
 uint8_t eeprom_task_buffer[MAVLINK_MAX_PAYLOAD_LEN];
 
 bool save_request;
-bool new_save_request; //The old save request isn't finished but get a new request
+bool new_save_request; //The old save request isn't finished then receive a new request
+
 bool task_has_been_suspended;
+
 bool eeprom_task_is_running;
 
 /**
@@ -49,6 +51,8 @@ bool check_eeprom_save_request(void)
  * This function is create for flight control task to mantain the EEPROM resource! */
 void eeprom_task_execute_by_flight_control(void)
 {
+	eeprom_task_is_running = true;
+
 	vTaskResume(eeprom_save_task_handle);
 }
 
@@ -56,7 +60,7 @@ void eeprom_task_execute_by_flight_control(void)
  * This function is create for flight control task to mantain the EEPROM resource! */
 void eeprom_task_suspend_by_flight_control(void)
 {
-	task_has_been_suspended = true;
+	eeprom_task_is_running = false;
 
 	vTaskSuspend(eeprom_save_task_handle);
 }
@@ -75,60 +79,61 @@ static void send_mavlink_status_text_message(char *text, uint8_t severity)
 	eeprom_manager_task_serial_write(eeprom_task_buffer, len);
 }
 
-/* This task is use for saving global datas into the EEPROM without interrupt
+/* This task is create for saving global datas into the EEPROM without interrupt
  * the communication with ground station */
 void eeprom_save_task(void)
 {
 	while(1) {
+		eeprom_task_is_running = true;
+
+		bool parameter_config;
+
 		bool eeprom_failed;
 		int eeprom_status;
 
-		eeprom_task_is_running = true;
+		eeprom.write('\0', 0, 1); //Clear the EEPROM check byte
 
-		/* Ensure the data will fully writting into the eeprom by checking
-		 * the first byte */
-		eeprom.write('\0', 0, 1); //Clear the first byte
-
+		/* Save all the global datas into the EEPROM */
 		int i;
 		for(i = 0; i < get_global_data_count(); i++) {
-			bool parameter_config;
 			get_global_data_parameter_config_status(i, &parameter_config);
 
+			//Not a user-modifiable parameter
 			if(parameter_config == true) {
-				eeprom_status = save_global_data_into_eeprom(i);
+				continue;
+			}
 
-				if(eeprom_status != GLOBAL_EEPROM_SUCCESS) {
-					eeprom_failed = true;
-					break;
-				}
+			//Save current global data into the EEPROM
+			eeprom_status = save_global_data_into_eeprom(i);
+
+			if(eeprom_status != GLOBAL_EEPROM_SUCCESS) {
+				eeprom_failed = true;
+				break;
 			}
 		}
 
 		if(eeprom_failed == false) {
-			if(task_has_been_suspended == false) {
+			/* Not finished yet */
+			if(new_save_request == false) {
 				send_mavlink_status_text_message("Successfully saved data into EEPROM", MAV_SEVERITY_INFO);
 
-				/* Setup the first byte because the job is finished */
+				/* Setup the EEPROM check byte */
 				uint8_t global_data_count = get_global_data_count();
 				eeprom.write(&global_data_count, 0, 1);
 			}
 		} else {
+			new_save_request = false; //Force to cancel the new save request
+
+			/* Print the Error message and the error code */
 			char error_message[51] = {'\0'};
 			sprintf(error_message, "Failed to save data into EEPROM [Error code: %d]", eeprom_status);
-
 			send_mavlink_status_text_message(error_message, MAV_SEVERITY_ERROR);
 		}
 
 		eeprom_task_is_running = false;
 
-		/* If the task has been suspended and a new eeprom save request is exist,
-		 * then save global datas into the EEPROM again to make sure the data in 
-		 * EEPROM is the newest */
-		if(task_has_been_suspended == true && save_request == true) {
-			task_has_been_suspended = false;
-			save_request = false;
-		/* If the old request isn't finished and get a new request, run the process again */
-		} else if (new_save_request == true) {
+		/* The job is not finished yet */
+		if (new_save_request == true) {
 			new_save_request = false;
 		/* Nothing to do, suspend the task */
 		} else {
