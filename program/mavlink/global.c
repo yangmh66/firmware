@@ -11,13 +11,12 @@
 
 #define QUADCOPTER 0
 
-bool eeprom_had_been_written;
 int modifiable_data_cnt = 0;
 
 global_data_t global_data[GLOBAL_DATA_CNT] = {
 	/* global data information */
 	[VEHICLE_TYPE] = {.name = "vehicle_type", .type = UINT8,
-		.data.uint8_value = QUADCOPTER},
+		.default_data.uint8_value = QUADCOPTER},
 
 	/* IMU information */
 	[TRUE_ROLL] = {.name = "imu.roll"},
@@ -67,30 +66,38 @@ global_data_t global_data[GLOBAL_DATA_CNT] = {
 
 	/* Sensor calibration */
 	[ACCEL_X_MAX] = {.name = "accel.max-x", .type = FLOAT, .parameter_config = true,
-		.data.float_value = 4096},
+		.default_data.float_value = 4096},
 	[ACCEL_X_MIN] = {.name = "accel.min-x", .type = FLOAT, .parameter_config = true,
-		.data.float_value = -4096},
+		.default_data.float_value = -4096},
 	[ACCEL_Y_MAX] = {.name = "accel.max-y", .type = FLOAT, .parameter_config = true,
-		.data.float_value = 4096},
+		.default_data.float_value = 4096},
 	[ACCEL_Y_MIN] = {.name = "accel.min-y", .type = FLOAT, .parameter_config = true,
-		.data.float_value = -4096},
+		.default_data.float_value = -4096},
 	[ACCEL_Z_MAX] = {.name = "accel.max-z", .type = FLOAT, .parameter_config = true,
-		.data.float_value = 4096},
+		.default_data.float_value = 4096},
 	[ACCEL_Z_MIN] = {.name = "accel.min-z", .type = FLOAT, .parameter_config = true,
-		.data.float_value = -4096},
+		.default_data.float_value = -4096},
 	[MAG_X_MAX] = {.name = "mag.max-x", .type = FLOAT, .parameter_config = true,
-		.data.float_value = 4096},
+		.default_data.float_value = 4096},
 	[MAG_X_MIN] = {.name = "mag.min-x", .type = FLOAT, .parameter_config = true,
-		.data.float_value = -4096},
+		.default_data.float_value = -4096},
 	[MAG_Y_MAX] = {.name = "mag.max-y", .type = FLOAT, .parameter_config = true,
-		.data.float_value = 4096},
+		.default_data.float_value = 4096},
 	[MAG_Y_MIN] = {.name = "mag.min-y", .type = FLOAT, .parameter_config = true,
-		.data.float_value = -4096},
+		.default_data.float_value = -4096},
 	[MAG_Z_MAX] = {.name = "mag.max-z", .type = FLOAT, .parameter_config = true,
-		.data.float_value = 4096},
+		.default_data.float_value = 4096},
 	[MAG_Z_MIN] = {.name = "mag.min-z", .type = FLOAT, .parameter_config = true,
-		.data.float_value = -4096}
+		.default_data.float_value = -4096}
 };
+
+static void reset_global_data_value(void)
+{
+	int i;
+	for(i = 0; i < GLOBAL_DATA_CNT; i++) {
+		global_data[i].data = global_data[i].default_data;
+	}
+}
 
 void init_global_data(void)
 {
@@ -144,14 +151,11 @@ void init_global_data_eeprom(void)
 
 	/* The first byte of EEPROM should store the global data count */
 	if(start_byte != get_global_data_count()) {
+		reset_global_data_value();
 		eeprom.clear();
-
-		//XXX:Write default data
 
 		return;
 	}
-
-	eeprom_had_been_written = true;
 
 	int i;
 	for(i = 0; i < get_global_data_count(); i++) {
@@ -188,12 +192,8 @@ void init_global_data_eeprom(void)
 				eeprom_checksum
 			);
 		} else {
-			/* Didn't pass the data check, stop reading and clear the EEPROM */
-			eeprom_had_been_written = false;
-	
+			reset_global_data_value();	
 			eeprom.clear();
-
-			//XXX:Write default data
 
 			return;
 		}
@@ -424,11 +424,6 @@ int save_global_data_into_eeprom(int index)
 		return GLOBAL_EEPROM_CHECKSUM_TEST_FAILED;
 	}
 
-	/* Set up the first byte of eeprom (data = global data count) */
-	if(eeprom_had_been_written == false) {
-		eeprom_had_been_written = true;
-	}
-
 	EEPROM_DEBUG_PRINT("[Write][address: %d][value: %f][payload: %d %d %d %d][checksum: %d]\n\r",
 		eeprom_address,
 		(double)data_eeprom.float_value,
@@ -441,13 +436,6 @@ int save_global_data_into_eeprom(int index)
 
 	return GLOBAL_EEPROM_SUCCESS;
 }
-
-#if 0
-int read_global_data_from_eeprom(int index)
-{
-	return GLOBAL_EEPROM_SUCCESS;
-}
-#endif
 
 /**
   * @brief  Set updated_flag
@@ -464,7 +452,8 @@ void set_global_data_update_flag(int index){
   * @param  index (int)
   * @retval None
   */
-void reset_global_data_update_flag(int index){
+void reset_global_data_update_flag(int index)
+{
 	global_data[index].updated_flag = false;
 }
 
@@ -473,6 +462,7 @@ void reset_global_data_update_flag(int index){
   * @param  index (int)
   * @retval Updated_flag status
   */
-bool check_global_data_update_flag(int index){
+bool check_global_data_update_flag(int index)
+{
 	return global_data[index].updated_flag;
 }
