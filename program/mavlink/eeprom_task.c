@@ -91,8 +91,6 @@ void eeprom_save_task(void)
 		bool eeprom_failed;
 		int eeprom_status;
 
-		eeprom.write('\0', 0, 1); //Clear the EEPROM check byte
-
 		/* Save all the global datas into the EEPROM */
 		int i;
 		for(i = 0; i < get_global_data_count(); i++) {
@@ -116,10 +114,6 @@ void eeprom_save_task(void)
 			/* Not finished yet */
 			if(new_save_request == false) {
 				send_mavlink_status_text_message("Successfully saved data into EEPROM", MAV_SEVERITY_INFO);
-
-				/* Setup the EEPROM check byte */
-				uint8_t global_data_count = get_global_data_count();
-				eeprom.write(&global_data_count, 0, 1);
 			}
 		} else {
 			new_save_request = false; //Force to cancel the new save request

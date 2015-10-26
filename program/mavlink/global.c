@@ -101,7 +101,7 @@ static void reset_global_data_value(void)
 
 void init_global_data(void)
 {
-	uint16_t eeprom_address = 1; //Reserve first byte
+	uint16_t eeprom_address = 0;
 
 	/* Calculate the data count on the ground station parameter
 	   configuration panel */
@@ -146,17 +146,6 @@ void init_global_data(void)
 
 void init_global_data_eeprom(void)
 {
-	uint8_t start_byte;
-	eeprom.read(&start_byte, 0, 1);
-
-	/* The first byte of EEPROM should store the global data count */
-	if(start_byte != get_global_data_count()) {
-		reset_global_data_value();
-		eeprom.clear();
-
-		return;
-	}
-
 	int i;
 	for(i = 0; i < get_global_data_count(); i++) {
 		bool parameter_config;
