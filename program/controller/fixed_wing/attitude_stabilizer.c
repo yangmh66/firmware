@@ -1,6 +1,6 @@
+#if (AIRFRAME_SELECT == AIRFRAME_CONVENTIONAL_FIXED_WING)
 
-
-#include "attitude_stabilizer.h"
+#include "fixed_wing/attitude_stabilizer.h"
 
 #define LOOP_DT  (0.00025f)
 
@@ -92,5 +92,4 @@ void PID_attitude_heading(attitude_stablizer_pid_t* PID_control,attitude_t* atti
 
 }
 
-
-
+#endif

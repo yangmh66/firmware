@@ -1,4 +1,6 @@
-#include "controller.h"
+#if (AIRFRAME_SELECT == AIRFRAME_CONVENTIONAL_FIXED_WING)
+
+#include "fixed_wing/controller.h"
 
 void PID_rc_pass_command(attitude_t* attitude,attitude_stablizer_pid_t* PID_roll,attitude_stablizer_pid_t* PID_pitch,attitude_stablizer_pid_t* PID_heading,vertical_pid_t* PID_Z,vertical_pid_t* PID_Zd,nav_pid_t* PID_nav,radio_controller_t* rc_command){
 
@@ -114,3 +116,5 @@ motor_output_t motor;
 }
 
 //__attribute__((unused))
+
+#endif

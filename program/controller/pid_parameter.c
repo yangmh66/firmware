@@ -1,4 +1,5 @@
-#include "attitude_stabilizer.h"
+#include "multirotor/attitude_stabilizer.h"
+#include "fixed_wing/attitude_stabilizer.h"
 #include "vertical_stabilizer.h"
 #include "navigation.h"
 #include "pid_parameter.h"
