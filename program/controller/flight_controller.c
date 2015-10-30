@@ -1,6 +1,7 @@
 /* Flight stabilizer and controller engine */
 
 #include "flight_controller.h"
+#include  "pid_parameter.h"
 
 	/* GPS localizer initialization */
 	UBXvelned_t GPS_velocity_NED;

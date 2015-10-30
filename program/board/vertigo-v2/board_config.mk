@@ -32,7 +32,8 @@ CONTROLLER_SRCS = $(CONTROLLER)/attitude_stabilizer.c \
 		$(CONTROLLER)/vertical_stabilizer.c \
 		$(CONTROLLER)/navigation.c \
 		$(CONTROLLER)/flight_controller.c \
-		$(CONTROLLER)/controller.c
+		$(CONTROLLER)/controller.c \
+		$(CONTROLLER)/pid_parameter.c
 
 FREERTOS_SRCS=$(FREERTOS)/Source/croutine.c \
 	$(FREERTOS)/Source/list.c \
