@@ -13,8 +13,6 @@
 
 #define CONTROLLER_YAW_MODE YAW_MODE_GYRO
 
-
-
 typedef struct attitude_stablizer_pid_t {
 	float kp,ki,kd;
 	float error;
@@ -23,7 +21,7 @@ typedef struct attitude_stablizer_pid_t {
 	float output;
 	float out_max, out_min;
 	float integral_max;
-
+	uint8_t controller_status;
 } attitude_stablizer_pid_t;
 
 void PID_attitude_roll(attitude_stablizer_pid_t* ,imu_data_t* ,attitude_t* );

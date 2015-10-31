@@ -2,8 +2,14 @@
 
 #include "multirotor/controller.h"
 
-void PID_rc_pass_command(attitude_t* attitude,attitude_stablizer_pid_t* PID_roll,attitude_stablizer_pid_t* PID_pitch,attitude_stablizer_pid_t* PID_heading,vertical_pid_t* PID_Z,vertical_pid_t* PID_Zd,nav_pid_t* PID_nav,radio_controller_t* rc_command){
-
+void PID_rc_pass_command(
+	attitude_t* attitude, //Measured attitude
+	attitude_stablizer_pid_t* PID_roll, attitude_stablizer_pid_t* PID_pitch, //Roll and pitch control
+	__attribute__((unused)) attitude_stablizer_pid_t* PID_yaw_rate, attitude_stablizer_pid_t* PID_heading, //Yaw rate and heading control
+	vertical_pid_t* PID_Z, vertical_pid_t* PID_Zd, //Vertical and vertical speed control
+	nav_pid_t* PID_nav, //Navigation
+	radio_controller_t* rc_command) //Radio control
+{
 	/* Attitude Controller command */
 	PID_roll -> setpoint = (rc_command -> roll_control_input) + (PID_nav -> output_roll);
 	PID_pitch -> setpoint = (rc_command -> pitch_control_input) + (PID_nav -> output_pitch);

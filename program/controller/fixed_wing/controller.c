@@ -2,30 +2,33 @@
 
 #include "fixed_wing/controller.h"
 
-void PID_rc_pass_command(attitude_t* attitude,attitude_stablizer_pid_t* PID_roll,attitude_stablizer_pid_t* PID_pitch,attitude_stablizer_pid_t* PID_heading,vertical_pid_t* PID_Z,vertical_pid_t* PID_Zd,nav_pid_t* PID_nav,radio_controller_t* rc_command){
+void PID_rc_pass_command(
+	attitude_t* attitude, //Measured attitude
+	attitude_stablizer_pid_t* PID_roll, attitude_stablizer_pid_t* PID_pitch, //Roll and pitch control
+	attitude_stablizer_pid_t* PID_yaw_rate, attitude_stablizer_pid_t* PID_heading, //Yaw rate and heading control
+	vertical_pid_t* PID_Z, vertical_pid_t* PID_Zd, //Vertical and vertical speed control
+	nav_pid_t* PID_nav, //Navigation
+	radio_controller_t* rc_command) //Radio control
+{
 
 	/* Attitude Controller command */
 	PID_roll -> setpoint = (rc_command -> roll_control_input) + (PID_nav -> output_roll);
 	PID_pitch -> setpoint = (rc_command -> pitch_control_input) + (PID_nav -> output_pitch);
 
-		if( rc_command -> safety == ENGINE_ON) {
-			/* If throttle is smaller than 10%, stop integrator */
+	if( rc_command -> safety == ENGINE_ON) {
+		/* If throttle is smaller than 10%, stop integrator */
 
-			if( rc_command -> throttle_control_input < 10.0f){
-				PID_roll -> integral = 0.0f;
-				PID_pitch -> integral = 0.0f;
-			}
-		}else{
-			
-			/* Always stop integrator when safety is on */
+		if( rc_command -> throttle_control_input < 10.0f){
 			PID_roll -> integral = 0.0f;
 			PID_pitch -> integral = 0.0f;
-
 		}
+	}else{
+			
+		/* Always stop integrator when safety is on */
+		PID_roll -> integral = 0.0f;
+		PID_pitch -> integral = 0.0f;
 
-
-
-
+	}
 
 	/* Heading Controller command */
 	if(CONTROLLER_YAW_MODE  == YAW_MODE_MAGNETO){
@@ -56,30 +59,43 @@ void PID_rc_pass_command(attitude_t* attitude,attitude_stablizer_pid_t* PID_roll
 
 
 	if((rc_command -> mode) == MODE_3){
-
-		PID_Z -> controller_status = CONTROLLER_ENABLE ;
-		PID_Zd -> controller_status = CONTROLLER_ENABLE ;
-		PID_nav -> controller_status = CONTROLLER_ENABLE;
-
-	}else if((rc_command -> mode) == MODE_2){
-
-		PID_Z -> controller_status = CONTROLLER_ENABLE ;
-		PID_Zd -> controller_status = CONTROLLER_ENABLE ;
+		/* MODE_3 - Guide mode */
+		PID_roll -> controller_status = CONTROLLER_ENABLE;
+		PID_pitch -> controller_status = CONTROLLER_ENABLE;
+		PID_yaw_rate -> controller_status = CONTROLLER_ENABLE;
+		PID_heading -> controller_status = CONTROLLER_ENABLE;
+		//XXX:Not implemented for fixed wing yet
+		PID_Z -> controller_status = CONTROLLER_DISABLE;
+		PID_Zd -> controller_status = CONTROLLER_DISABLE;
 		PID_nav -> controller_status = CONTROLLER_DISABLE;
 
-	}else{ // MODE_1
+	}else if((rc_command -> mode) == MODE_2){
+		/* MODE_2 - Stable mode (Attitude control only) */
+		PID_roll -> controller_status = CONTROLLER_ENABLE;
+		PID_pitch -> controller_status = CONTROLLER_ENABLE;
+		PID_yaw_rate -> controller_status = CONTROLLER_ENABLE;
+		PID_heading -> controller_status = CONTROLLER_ENABLE;
 
-		PID_Z -> controller_status = CONTROLLER_DISABLE ;
-		PID_Zd -> controller_status = CONTROLLER_DISABLE ;
+		PID_Z -> controller_status = CONTROLLER_DISABLE;
+		PID_Zd -> controller_status = CONTROLLER_DISABLE;
+		PID_nav -> controller_status = CONTROLLER_DISABLE;
+
+	}else{
+		/* MODE_1 - Maunal flight mode (Disable all controllers) */
+		PID_roll -> controller_status = CONTROLLER_DISABLE;
+		PID_pitch -> controller_status = CONTROLLER_DISABLE;
+		PID_yaw_rate -> controller_status = CONTROLLER_DISABLE;
+		PID_heading -> controller_status = CONTROLLER_DISABLE;
+		PID_Z -> controller_status = CONTROLLER_DISABLE;
+		PID_Zd -> controller_status = CONTROLLER_DISABLE;
 		PID_nav -> controller_status = CONTROLLER_DISABLE;
 
 	}
-
 }
 
-void PID_output(radio_controller_t* rc_command,attitude_stablizer_pid_t* PID_roll,attitude_stablizer_pid_t* PID_pitch,attitude_stablizer_pid_t* PID_yaw_rate,vertical_pid_t* PID_Zd){
-
-motor_output_t motor;
+void PID_output(radio_controller_t* rc_command,attitude_stablizer_pid_t* PID_roll,attitude_stablizer_pid_t* PID_pitch,attitude_stablizer_pid_t* PID_yaw_rate,vertical_pid_t* PID_Zd)
+{
+	motor_output_t motor;
 
 	motor. m1 =0.0;
 	motor. m2 =0.0;
@@ -93,6 +109,7 @@ motor_output_t motor;
 	motor. m10 =0.0;
 	motor. m11 =0.0;
 	motor. m12 =0.0;
+
 	if( rc_command -> safety == ENGINE_ON) {
 
 	motor . m1 = -10.0f + (rc_command->throttle_control_input) - (PID_roll->output) + (PID_pitch -> output) - (PID_yaw_rate -> output) + (PID_Zd -> output);
@@ -114,7 +131,5 @@ motor_output_t motor;
 	LED_OFF(LED3);
 	}
 }
-
-//__attribute__((unused))
 
 #endif
