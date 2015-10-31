@@ -93,7 +93,12 @@ void PID_rc_pass_command(
 	}
 }
 
-void PID_output(radio_controller_t* rc_command,attitude_stablizer_pid_t* PID_roll,attitude_stablizer_pid_t* PID_pitch,attitude_stablizer_pid_t* PID_yaw_rate,vertical_pid_t* PID_Zd)
+void PID_output(
+	radio_controller_t* rc_command,
+	attitude_stablizer_pid_t* PID_roll,
+	attitude_stablizer_pid_t* PID_pitch,
+	attitude_stablizer_pid_t* PID_yaw_rate,
+	__attribute__((unused)) vertical_pid_t* PID_Zd)
 {
 	motor_output_t motor;
 
@@ -111,24 +116,26 @@ void PID_output(radio_controller_t* rc_command,attitude_stablizer_pid_t* PID_rol
 	motor. m12 =0.0;
 
 	if( rc_command -> safety == ENGINE_ON) {
+		/* Engine control */
+		motor.m1 = -10.0f + rc_command->throttle_control_input;
 
-	motor . m1 = -10.0f + (rc_command->throttle_control_input) - (PID_roll->output) + (PID_pitch -> output) - (PID_yaw_rate -> output) + (PID_Zd -> output);
-	motor . m2 = -10.0f + (rc_command->throttle_control_input) + (PID_roll->output) + (PID_pitch -> output) + (PID_yaw_rate -> output) + (PID_Zd -> output);
-	motor . m3 = -10.0f + (rc_command->throttle_control_input) + (PID_roll->output) - (PID_pitch -> output) - (PID_yaw_rate -> output) + (PID_Zd -> output);
-	motor . m4 = -10.0f + (rc_command->throttle_control_input) - (PID_roll->output) - (PID_pitch -> output) + (PID_yaw_rate -> output) + (PID_Zd -> output);
-	set_pwm_motor(&motor);
+		/* Aileron cotrol */
+		motor.m2 = PID_roll->output;
+		motor.m3 = -PID_roll->output;
 
-	LED_ON(LED3);
+		/* Elevator control */
+		motor.m4 = PID_pitch->output;
+		motor.m5 = PID_pitch->output;
 
-	}else{
+		/* Rudder control */
+		motor.m6 = PID_yaw_rate -> output;
 
-	motor. m1 =0.0;
-	motor. m2 =0.0;
-	motor. m3 =0.0;
-	motor. m4 =0.0;
-	set_pwm_motor(&motor);
-
-	LED_OFF(LED3);
+		set_pwm_motor(&motor);
+		LED_ON(LED3);
+	} else {
+		motor.m1 = 0.0; //Shut down the engine
+		set_pwm_motor(&motor);
+		LED_OFF(LED3);
 	}
 }
 
