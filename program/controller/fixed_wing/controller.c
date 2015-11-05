@@ -115,7 +115,7 @@ void PID_output(
 	motor. m11 =0.0;
 	motor. m12 =0.0;
 
-	if( rc_command -> safety == ENGINE_ON) {
+	if(rc_command -> safety == ENGINE_ON) {
 		/* Engine control */
 		motor.m1 = rc_command->throttle_control_input;
 
@@ -128,13 +128,16 @@ void PID_output(
 		motor.m5 = SERVO_NEUTRUL_POINT - PID_pitch->output;
 
 		/* Rudder control */
-		motor.m6 = SERVO_NEUTRUL_POINT + PID_yaw_rate -> output;
+		motor.m6 = SERVO_NEUTRUL_POINT + PID_yaw_rate->output;
 
 		set_pwm_motor(&motor);
+
 		LED_ON(LED3);
 	} else {
 		motor.m1 = 0.0; //Shut down the engine
+
 		set_pwm_motor(&motor);
+
 		LED_OFF(LED3);
 	}
 }
