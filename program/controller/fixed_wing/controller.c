@@ -117,7 +117,7 @@ void PID_output(
 
 	if( rc_command -> safety == ENGINE_ON) {
 		/* Engine control */
-		motor.m1 = -10.0f + rc_command->throttle_control_input;
+		motor.m1 = rc_command->throttle_control_input;
 
 		/* Aileron cotrol */
 		motor.m2 = PID_roll->output;
