@@ -18,6 +18,9 @@
 #define MOTOR11_PWM_PULSE TIM3->CCR3
 #define MOTOR12_PWM_PULSE TIM3->CCR4
 #define CONTROL_OUTPUT_SCALE 100.0f
+
+#define SERVO_NEUTRUL_POINT 50 //Percentage
+
 typedef struct motor_output_t {
 	float m1;
 	float m2;

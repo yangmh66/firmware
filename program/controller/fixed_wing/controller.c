@@ -120,15 +120,15 @@ void PID_output(
 		motor.m1 = rc_command->throttle_control_input;
 
 		/* Aileron cotrol */
-		motor.m2 = PID_roll->output;
-		motor.m3 = -PID_roll->output;
+		motor.m2 = SERVO_NEUTRUL_POINT + PID_roll->output;
+		motor.m3 = SERVO_NEUTRUL_POINT - PID_roll->output;
 
 		/* Elevator control */
-		motor.m4 = PID_pitch->output;
-		motor.m5 = PID_pitch->output;
+		motor.m4 = SERVO_NEUTRUL_POINT + PID_pitch->output;
+		motor.m5 = SERVO_NEUTRUL_POINT - PID_pitch->output;
 
 		/* Rudder control */
-		motor.m6 = PID_yaw_rate -> output;
+		motor.m6 = SERVO_NEUTRUL_POINT + PID_yaw_rate -> output;
 
 		set_pwm_motor(&motor);
 		LED_ON(LED3);
