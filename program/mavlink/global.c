@@ -85,33 +85,33 @@ void init_global_data(void)
 	set_global_data_value(MODE_BUTTON, UINT8, DATA_CAST((uint8_t)QUADCOPTER));
 
 	/* Attitude PID Gain */
-	set_global_data_value(ROLL_KP, FLOAT, DATA_CAST((float)0.20f));
-	set_global_data_value(ROLL_KI, FLOAT, DATA_CAST((float)0.045f));
-	set_global_data_value(ROLL_KD, FLOAT, DATA_CAST((float)0.07f));
+	set_global_data_value(ROLL_KP, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(ROLL_KI, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(ROLL_KD, FLOAT, DATA_CAST((float)0.0f));
 
-	set_global_data_value(PITCH_KP, FLOAT, DATA_CAST((float)0.20f));
-	set_global_data_value(PITCH_KI, FLOAT, DATA_CAST((float)0.045));
-	set_global_data_value(PITCH_KD, FLOAT, DATA_CAST((float)0.07f));
+	set_global_data_value(PITCH_KP, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(PITCH_KI, FLOAT, DATA_CAST((float)0.0));
+	set_global_data_value(PITCH_KD, FLOAT, DATA_CAST((float)0.0f));
 
-	set_global_data_value(YAW_KP, FLOAT, DATA_CAST((float)0.65));
-	set_global_data_value(YAW_KI, FLOAT, DATA_CAST((float)0));
-	set_global_data_value(YAW_KD, FLOAT, DATA_CAST((float)0));
+	set_global_data_value(YAW_KP, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(YAW_KI, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(YAW_KD, FLOAT, DATA_CAST((float)0.0f));
 
-	set_global_data_value(YAW_KP, FLOAT, DATA_CAST((float)0.65));
-	set_global_data_value(YAW_KI, FLOAT, DATA_CAST((float)0));
-	set_global_data_value(YAW_KD, FLOAT, DATA_CAST((float)0));
+	set_global_data_value(YAW_KP, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(YAW_KI, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(YAW_KD, FLOAT, DATA_CAST((float)0.0f));
 
-	set_global_data_value(HEADING_KP, FLOAT, DATA_CAST((float)2.5));
-	set_global_data_value(HEADING_KI, FLOAT, DATA_CAST((float)0));
-	set_global_data_value(HEADING_KD, FLOAT, DATA_CAST((float)0));
+	set_global_data_value(HEADING_KP, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(HEADING_KI, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(HEADING_KD, FLOAT, DATA_CAST((float)0.0f));
 
-	set_global_data_value(ZD_KP, FLOAT, DATA_CAST((float)0.3));
-	set_global_data_value(ZD_KI, FLOAT, DATA_CAST((float)0.03));
-	set_global_data_value(ZD_KD, FLOAT, DATA_CAST((float)0));
+	set_global_data_value(ZD_KP, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(ZD_KI, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(ZD_KD, FLOAT, DATA_CAST((float)0.0f));
 
-	set_global_data_value(Z_KP, FLOAT, DATA_CAST((float)1.4));
-	set_global_data_value(Z_KI, FLOAT, DATA_CAST((float)0));
-	set_global_data_value(Z_KD, FLOAT, DATA_CAST((float)0));
+	set_global_data_value(Z_KP, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(Z_KI, FLOAT, DATA_CAST((float)0.0f));
+	set_global_data_value(Z_KD, FLOAT, DATA_CAST((float)0.0f));
 
 
 	int i;

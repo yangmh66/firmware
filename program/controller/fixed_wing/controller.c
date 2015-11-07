@@ -89,7 +89,6 @@ void PID_rc_pass_command(
 		PID_Z -> controller_status = CONTROLLER_DISABLE;
 		PID_Zd -> controller_status = CONTROLLER_DISABLE;
 		PID_nav -> controller_status = CONTROLLER_DISABLE;
-
 	}
 }
 
