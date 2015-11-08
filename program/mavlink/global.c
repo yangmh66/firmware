@@ -1,5 +1,8 @@
 #include <stddef.h>
 #include <stdbool.h>
+
+#include "mavlink.h"
+
 #include "global.h"
 #include "attitude_stabilizer.h"
 
@@ -75,12 +78,6 @@ global_data_t global_mav_data_list[GLOBAL_DATA_CNT] = {
 
 void init_global_data(void)
 {
-	/* Vehicle information */
-	set_global_data_value(VEHICLE_TYPE, UINT8, DATA_CAST((uint8_t)QUADCOPTER));
-
-	/* Flight status */
-
-	
 	set_global_data_value(SAFTY_BUTTON, UINT8, DATA_CAST((uint8_t)QUADCOPTER));
 	set_global_data_value(MODE_BUTTON, UINT8, DATA_CAST((uint8_t)QUADCOPTER));
 
@@ -113,6 +110,20 @@ void init_global_data(void)
 	set_global_data_value(Z_KI, FLOAT, DATA_CAST((float)0.0f));
 	set_global_data_value(Z_KD, FLOAT, DATA_CAST((float)0.0f));
 
+	switch(AIRFRAME_SELECT) {
+	    case AIRFRAME_QUADROTOR:
+		set_global_data_value(VEHICLE_TYPE, UINT8, DATA_CAST((uint8_t)MAV_TYPE_QUADROTOR));
+		break;
+	    case AIRFRAME_OCTOROTOR:
+		set_global_data_value(VEHICLE_TYPE, UINT8, DATA_CAST((uint8_t)MAV_TYPE_OCTOROTOR));
+		break;
+	    case AIRFRAME_CONVENTIONAL_FIXED_WING:
+	    case AIRFRAME_DELTA_FIXED_WING:
+		set_global_data_value(VEHICLE_TYPE, UINT8, DATA_CAST((uint8_t)MAV_TYPE_FIXED_WING));
+		break;
+	    default:
+		set_global_data_value(VEHICLE_TYPE, UINT8, DATA_CAST((uint8_t)MAV_TYPE_GENERIC));
+	}
 
 	int i;
 	for(i = 0; i < get_global_data_count(); i++) {
