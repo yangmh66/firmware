@@ -1,14 +1,24 @@
 #include "stm32f4_system.h"
 #include "stm32f4xx_conf.h"
 #include "tim.h"
-/* TIM2 PWM3  PA0 */	/* TIM2 PWM4  PA1 */	/* TIM2 PWM5  PA2 */	/* TIM2 PWM8  PA3 */
-/* TIM3 PWM9  PA6 */	/* TIM3 PWM10 PA7 */
-
-/* TIM3 PWM11 PB0 */	/* TIM3 PWM12 PB1 */	/* TIM4 PWM1  PB6 */	/* TIM4 PWM2  PB7 */
-
 
 void enable_tim1(void)
 {
+	/* [PWM Output]
+	 * Timer1: 180Mhz
+	 * Period count: 25000
+	 * Prescaler: 18
+	 * Clock Division: 1
+	 * 25000 * 18 / (180MHZ) = 0.0025(s) = 2.5(ms) = 400hz
+	 * ----------------------
+	 * Frequency: 400hz
+	 * Period: 2.5ms
+	 * ----------------------
+	 * MOTOR1: PE9  (Channel 1)
+	 * MOTOR2: PE11 (Channel 2)
+	 * MOTOR3: PE13 (Channel 3)
+	 * MOTOR4: PE14 (Channel 4)
+	 */
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
 
@@ -19,8 +29,7 @@ void enable_tim1(void)
 	GPIO_PinAFConfig(GPIOE, GPIO_PinSource14, GPIO_AF_TIM1);
 
 	GPIO_InitTypeDef GPIO_InitStruct;
-	GPIO_InitStruct.GPIO_Pin =  GPIO_Pin_9 | GPIO_Pin_11 |
-				    GPIO_Pin_13 | GPIO_Pin_14;
+	GPIO_InitStruct.GPIO_Pin =  GPIO_Pin_9 | GPIO_Pin_11 | GPIO_Pin_13 | GPIO_Pin_14;
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
@@ -32,16 +41,14 @@ void enable_tim1(void)
 	TIM_DeInit(TIM1);
 
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStruct;
-	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);  //2.5ms , 400kHz
-	TIM_TimeBaseStruct.TIM_Prescaler = (uint16_t)(18 - 1); //84 = 1M(1us)
+	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);
+	TIM_TimeBaseStruct.TIM_Prescaler = (uint16_t)(18 - 1);
 	TIM_TimeBaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStruct.TIM_RepetitionCounter = 0;
 	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 
 	TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStruct);
 
-
-	/*TIM2 TIM3 TIM4 TIM8 */
 	TIM_OCInitTypeDef TIM_OCInitStruct;
 	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
@@ -68,13 +75,27 @@ void enable_tim1(void)
 
 void enable_tim2(void)
 {
+	/* [PWM Input]
+	 * Timer2: APB1 (45Mhz)
+	 * Period count: 65535
+	 * Prescaler: 5
+	 * Clock Division: 1
+	 * 65535 * 5 / (45MHZ) = 0.000728(s) = 0.728(ms) = 1373.31hz
+	 * ----------------------
+	 * Frequency: 1373.31hz
+	 * Period: 0.728ms
+	 * ----------------------
+	 * RC1: PA3  (Channel 4)
+	 * RC2: PA2  (Channel 3)
+	 * RC5: PB3  (Channel 2)
+	 * RC6: PA15 (Channel 1)
+	 */
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 	TIM_ICInitTypeDef  TIM_ICInitStructure;
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStruct;
 	
-	/* TIM4 clock enable */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
 	/* GPIOB clock enable */
@@ -106,10 +127,10 @@ void enable_tim2(void)
 	NVIC_Init(&NVIC_InitStructure);
 
 	TIM_DeInit(TIM2);;
-	TIM_TimeBaseStruct.TIM_Period = 0xFFFF;              // 週期 = 2.5ms, 400kHz
-	TIM_TimeBaseStruct.TIM_Prescaler = 5;            // 除頻84 = 1M ( 1us )
+	TIM_TimeBaseStruct.TIM_Period = 0xFFFF; //0xFFFF = 65535
+	TIM_TimeBaseStruct.TIM_Prescaler = 5;
 	TIM_TimeBaseStruct.TIM_ClockDivision = 0;
-	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;    // 上數
+	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStruct);
 
 	TIM_ICInitStructure.TIM_Channel = TIM_Channel_1;
@@ -137,6 +158,21 @@ void enable_tim2(void)
 }
 void enable_tim3(void)
 {
+	/* [PWM Output]
+	 * Timer3: 90Mhz
+	 * Period count: 25000
+	 * Prescaler: 9
+	 * Clock Division: 1
+	 * 25000 * 9 / (90Mhz) = 0.0025(s) = 2.5(ms) = 400hz
+	 * ----------------------
+	 * Frequency: 400hz
+	 * Period: 2.5ms
+	 * ----------------------
+	 * MOTOR9 : PC6 (Channel 1)
+	 * MOTOR10: PC7 (Channel 2)
+	 * MOTOR11: PC8 (Channel 3)
+	 * MOTOR12: PC9 (Channel 4)
+	 */
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
@@ -159,8 +195,8 @@ void enable_tim3(void)
 	TIM_DeInit(TIM3);
 
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStruct;
-	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);   //2.5ms , 400kHz
-	TIM_TimeBaseStruct.TIM_Prescaler = (uint16_t)(9 - 1);  //84 = 1M(1us)
+	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);
+	TIM_TimeBaseStruct.TIM_Prescaler = (uint16_t)(9 - 1);
 	TIM_TimeBaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 
@@ -190,6 +226,21 @@ void enable_tim3(void)
 
 void enable_tim4(void)
 {
+	/* [PWM Output]
+	 * Timer4: 90Mhz
+	 * Period count: 25000
+	 * Prescaler: 9
+	 * Clock Division: 1
+	 * 25000 * 9 / (90Mhz) = 0.0025(s) = 2.5(ms) = 400hz
+	 * ----------------------
+	 * Frequency: 400hz
+	 * Period: 2.5ms
+	 * ----------------------
+	 * MOTOR5: PD12 (Channel 1)
+	 * MOTOR6: PD13 (Channel 2)
+	 * MOTOR7: PD14 (Channel 3)
+	 * MOTOR8: PD15 (Channel 4)
+	 */
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
 
@@ -213,15 +264,13 @@ void enable_tim4(void)
 	TIM_DeInit(TIM4);
 
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStruct;
-	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);    //2.5ms , 400kHz
-	TIM_TimeBaseStruct.TIM_Prescaler = (uint16_t)(9 - 1); //84 = 1M(1us)
+	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);
+	TIM_TimeBaseStruct.TIM_Prescaler = (uint16_t)(9 - 1);
 	TIM_TimeBaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 
 	TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStruct);
 
-
-	/*TIM2 TIM3 TIM4 TIM8 */
 	TIM_OCInitTypeDef TIM_OCInitStruct;
 	TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
@@ -244,6 +293,20 @@ void enable_tim4(void)
 
 void enable_tim5(void)
 {
+	/* [PWM Input]
+	 * Timer5: APB1 (45Mhz)
+	 * Period count: 65535
+	 * Prescaler: 5
+	 * Clock Division: 1
+	 * 65535 * 5 / (45MHZ) = 0.000728(s) = 0.728(ms) = 1373.31hz
+	 * ----------------------
+	 * Frequency: 1373.31hz
+	 * Period: 0.728ms
+	 * ----------------------
+	 * RC3: PA1  (Channel 2)
+	 * RC4: PA0  (Channel 1)
+	 */
+
 	GPIO_InitTypeDef GPIO_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 	TIM_ICInitTypeDef  TIM_ICInitStructure;
@@ -274,10 +337,10 @@ void enable_tim5(void)
 	NVIC_Init(&NVIC_InitStructure);
 
 	TIM_DeInit(TIM5);
-	TIM_TimeBaseStruct.TIM_Period = 0xFFFF;              // 週期 = 2.5ms, 400kHz
-	TIM_TimeBaseStruct.TIM_Prescaler = 5;            // 除頻84 = 1M ( 1us )
+	TIM_TimeBaseStruct.TIM_Period = 0xFFFF; //0xFFFF = 65535
+	TIM_TimeBaseStruct.TIM_Prescaler = 5;
 	TIM_TimeBaseStruct.TIM_ClockDivision = 0;
-	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;    // 上數
+	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInit(TIM5, &TIM_TimeBaseStruct);
 
 	TIM_ICInitStructure.TIM_Channel = TIM_Channel_1;
@@ -300,7 +363,6 @@ void enable_tim5(void)
 }
 void enable_tim9()
 {
-
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM9, ENABLE);
 	NVIC_InitTypeDef NVIC_InitStructure;
 
@@ -315,8 +377,8 @@ void enable_tim9()
 	/* -- Timer Configuration --------------------------------------------------- */
 	TIM_DeInit(TIM9);
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStruct;
-	TIM_TimeBaseStruct.TIM_Period = 250 - 1 ;  //2.5ms , 400kHz
-	TIM_TimeBaseStruct.TIM_Prescaler = 180 - 1; //84 = 1M(1us)
+	TIM_TimeBaseStruct.TIM_Period = 250 - 1 ;
+	TIM_TimeBaseStruct.TIM_Prescaler = 180 - 1;
 	TIM_TimeBaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 
@@ -342,8 +404,8 @@ void enable_tim10()
 	/* -- Timer Configuration --------------------------------------------------- */
 	TIM_DeInit(TIM10);
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStruct;
-	TIM_TimeBaseStruct.TIM_Period = 1000 - 60;  //2.5ms , 400kHz
-	TIM_TimeBaseStruct.TIM_Prescaler = 180 - 1; //84 = 1M(1us)
+	TIM_TimeBaseStruct.TIM_Period = 1000 - 60;
+	TIM_TimeBaseStruct.TIM_Prescaler = 180 - 1;
 	TIM_TimeBaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 
