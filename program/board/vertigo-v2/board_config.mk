@@ -28,11 +28,14 @@ COMMON_SRCS =$(COMMON)/test_common.c \
 	$(COMMON)/io.c \
 	$(COMMON)/std.c
 
-CONTROLLER_SRCS = $(CONTROLLER)/attitude_stabilizer.c \
+CONTROLLER_SRCS = $(CONTROLLER)/multirotor/attitude_stabilizer.c \
+		 $(CONTROLLER)/fixed_wing/attitude_stabilizer.c \
 		$(CONTROLLER)/vertical_stabilizer.c \
 		$(CONTROLLER)/navigation.c \
 		$(CONTROLLER)/flight_controller.c \
-		$(CONTROLLER)/controller.c
+		$(CONTROLLER)/multirotor/controller.c \
+		$(CONTROLLER)/fixed_wing/controller.c \
+		$(CONTROLLER)/pid_parameter.c
 
 FREERTOS_SRCS=$(FREERTOS)/Source/croutine.c \
 	$(FREERTOS)/Source/list.c \

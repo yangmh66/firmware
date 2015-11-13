@@ -14,11 +14,17 @@ include $(WORKSPACE_DIR)/board/vertigo-v2/board_config.mk
 
 OBJS = $(sort $(patsubst %c, %o, $(SRCS) ))
 
-
+#
+#Airframe setting
+AIRFRAME_SELECT = AIRFRAME_CONVENTIONAL_FIXED_WING
+#AIRFRAME_QUADROTOR
+#AIRFRAME_OCTOROTOR
+#AIRFRAME_CONVENTIONAL_FIXED_WING
+#AIRFRAME_DELTA_FIXED_WING
 
 #
 #make target
-all: $(FIRMWARE).bin $(FIRMWARE).elf
+all: $(FIRMWARE).bin $(FIRMWARE).elf info
 
 include $(WORKSPACE_DIR)/makefiles/rules.mk
 
@@ -66,8 +72,16 @@ flash_openocd:
 	-c "flash write_image erase $(FIRMWARE).elf" \
 	-c "verify_image $(FIRMWARE).elf" \
 	-c "reset run" -c shutdown
+
 #automatically formate
 astyle: 
 	astyle -r --exclude=lib  *.c *.h
+
+info:
+	@echo "========================================================"
+	@echo "[Configurations]"
+	@echo "Control board:" $(TARGET_BOARD)
+	@echo "Airframe:" $(AIRFRAME_SELECT)
+	@echo "========================================================"
 
 .PHONY:all clean flash openocd gdbauto gdbtui cgdb astyle

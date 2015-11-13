@@ -1,4 +1,4 @@
-
+#if (AIRFRAME_SELECT == AIRFRAME_QUADROTOR)
 
 #include "attitude_stabilizer.h"
 
@@ -92,5 +92,4 @@ void PID_attitude_heading(attitude_stablizer_pid_t* PID_control,attitude_t* atti
 
 }
 
-
-
+#endif

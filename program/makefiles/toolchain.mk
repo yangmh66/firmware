@@ -36,6 +36,8 @@ LDLIBS = -Wl,--start-group -lm  -L$(ESTIMATOR) -lestimator -Wl,--end-group
 CFLAGS_INCLUDE=-I$(WORKSPACE_DIR)/ \
 	-I$(TEST) \
 	-I$(ACTUATORS) \
+	-I$(CONTROLLER)/multirotor/ \
+	-I$(CONTROLLER)/fixed_wing/ \
 	-I$(CONTROLLER) \
 	-I$(MCU_PERIPH) \
 	-I$(EXTERNAL_DEVICE) \
@@ -50,11 +52,14 @@ CFLAGS_INCLUDE=-I$(WORKSPACE_DIR)/ \
 	-I$(MAVLINK_LIB) \
 	-I$(MAVLINK_LIB)/common
 
+export AIRFRAME_SELECT
+
 CFLAGS_DEFINE= \
         -D USE_STDPERIPH_DRIVER \
         -D __FPU_PRESENT=1 \
         -D ARM_MATH_CM4 \
         -D __FPU_USED=1 \
+	-D AIRFRAME_SELECT=$(AIRFRAME_SELECT) \
         -include $(BOARD_CONFIG) \
         -include $(DEBUG_CONFIG) \
 	-U printf -D printf=printf_base

@@ -1,4 +1,13 @@
 //Vertigo v2.0 board setting
+/* Airframe selection () */
+#define AIRFRAME_QUADROTOR 0
+#define AIRFRAME_OCTOROTOR 1
+#define AIRFRAME_CONVENTIONAL_FIXED_WING 2
+#define AIRFRAME_DELTA_FIXED_WING 3
+
+//#define AIRFRAME_SELECT AIRFRAME_CONVENTIONAL_FIXED_WING
+
+/* Device configuration */
 #define USE_FUTABA 
 #define USE_IMU_MPU9250
 #define USE_MAG_HMC5983

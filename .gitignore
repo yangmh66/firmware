@@ -5,8 +5,6 @@ cscope*
 *.bin
 *.elf
 *.out
-*.swp
-*.swn
-*.swo
+*.sw*
 *.gch
 *.*~
