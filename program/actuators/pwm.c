@@ -42,8 +42,8 @@ void set_pwm_motor(motor_output_t* m)
 	motor.m11 = bound_float(m->m11, 0.0f, 100.0f);
 	motor.m12 = bound_float(m->m12, 0.0f, 100.0f);
 
-	ccr[0]= (uint16_t)((motor.m1*CONTROL_OUTPUT_SCALE) + MOTOR_PWM_MIN_PULSE );
-	ccr[1]= (uint16_t)((motor.m2*CONTROL_OUTPUT_SCALE) + MOTOR_PWM_MIN_PULSE );
+	ccr[0]= (uint16_t)((motor.m1*CONTROL_OUTPUT_SCALE) + MOTOR_PWM_MIN_PULSE);
+	ccr[1]= (uint16_t)((motor.m2*CONTROL_OUTPUT_SCALE) + MOTOR_PWM_MIN_PULSE);
 	ccr[2]= (uint16_t)((motor.m3*CONTROL_OUTPUT_SCALE) + MOTOR_PWM_MIN_PULSE);
 	ccr[3]= (uint16_t)((motor.m4*CONTROL_OUTPUT_SCALE) + MOTOR_PWM_MIN_PULSE);
 	ccr[4]= (uint16_t)((motor.m5*CONTROL_OUTPUT_SCALE) + MOTOR_PWM_MIN_PULSE);
@@ -54,6 +54,7 @@ void set_pwm_motor(motor_output_t* m)
 	ccr[9]= (uint16_t)((motor.m10*CONTROL_OUTPUT_SCALE)+ MOTOR_PWM_MIN_PULSE);
 	ccr[10]= (uint16_t)((motor.m11*CONTROL_OUTPUT_SCALE)+ MOTOR_PWM_MIN_PULSE);
 	ccr[11]= (uint16_t)((motor.m12*CONTROL_OUTPUT_SCALE)+ MOTOR_PWM_MIN_PULSE);
+
 	MOTOR1_PWM_PULSE = bound_uint16(ccr[0], MOTOR_PWM_MIN_PULSE, MOTOR_PWM_MAX_PULSE);
 	MOTOR2_PWM_PULSE = bound_uint16(ccr[1], MOTOR_PWM_MIN_PULSE, MOTOR_PWM_MAX_PULSE);
 	MOTOR3_PWM_PULSE = bound_uint16(ccr[2], MOTOR_PWM_MIN_PULSE, MOTOR_PWM_MAX_PULSE);
