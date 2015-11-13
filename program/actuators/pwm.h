@@ -2,15 +2,8 @@
 #define FILE_PWM_H
 #include <stdint.h>
 
-/* Motor control (400hz) */
-#define MOTOR_PWM_MAX_PULSE 20000 
+#define MOTOR_PWM_MAX_PULSE 20000
 #define MOTOR_PWM_MIN_PULSE 10000
-
-/* Servo control (50hz) */
-#define SERVO_PWM_MAX_PULSE 2000
-#define SERVO_PWM_MIN_PULSE 1000
-
-#define SERVO_NEUTRUL_POINT 50.0f //Percentage
 
 #define MOTOR1_PWM_PULSE TIM1->CCR1
 #define MOTOR2_PWM_PULSE TIM1->CCR2
@@ -24,7 +17,10 @@
 #define MOTOR10_PWM_PULSE TIM3->CCR2
 #define MOTOR11_PWM_PULSE TIM3->CCR3
 #define MOTOR12_PWM_PULSE TIM3->CCR4
+
 #define CONTROL_OUTPUT_SCALE 100.0f
+#define SERVO_NEUTRUL_POINT 50.0f
+
 
 typedef struct motor_output_t {
 	float m1;
