@@ -6,14 +6,14 @@ void enable_tim1(void)
 {
 	/* [PWM Output]
 	 * Timer1: 180Mhz
-	 * Period count: 25000
+	 * ------------------------
 	 * Prescaler: 18
 	 * Clock Division: 1
-	 * 25000 * 18 / (180MHZ) = 0.0025(s) = 2.5(ms) = 400hz
-	 * ----------------------
+	 * ------------------------
+	 * Period count: 25000
 	 * Frequency: 400hz
 	 * Period: 2.5ms
-	 * ----------------------
+	 * ------------------------
 	 * MOTOR1: PE9  (Channel 1)
 	 * MOTOR2: PE11 (Channel 2)
 	 * MOTOR3: PE13 (Channel 3)
@@ -76,15 +76,15 @@ void enable_tim1(void)
 void enable_tim2(void)
 {
 	/* [PWM Input]
-	 * Timer2: APB1 (90Mhz)
-	 * Period count: 65535
+	 * Timer2: 90Mhz
+	 * ---------------------
 	 * Prescaler: 5
 	 * Clock Division: 1
-	 * 65535 * 5 / (90Mhz) = 0.00364(s) = 3.64(ms) = 274.66hz
-	 * ----------------------
+	 * ---------------------
+	 * Period count: 65535
 	 * Frequency: 274.66hz
 	 * Period: 3.64ms
-	 * ----------------------
+	 * ---------------------
 	 * RC1: PA3  (Channel 4)
 	 * RC2: PA2  (Channel 3)
 	 * RC5: PB3  (Channel 2)
@@ -160,14 +160,20 @@ void enable_tim3(void)
 {
 	/* [PWM Output]
 	 * Timer3: 90Mhz
-	 * Period count: 25000
+	 * ------------------------
 	 * Prescaler: 9
 	 * Clock Division: 1
-	 * 25000 * 9 / (90Mhz) = 0.0025(s) = 2.5(ms) = 400hz
-	 * ----------------------
+	 * ------------------------
+	 * [Motor mode]
+	 * Period count: 25000
 	 * Frequency: 400hz
 	 * Period: 2.5ms
-	 * ----------------------
+	 * ------------------------
+	 * [Servo mode]
+	 * Period count: 200000
+	 * Frequency: 50hz
+	 * Period: 20ms
+	 * ------------------------
 	 * MOTOR9 : PC6 (Channel 1)
 	 * MOTOR10: PC7 (Channel 2)
 	 * MOTOR11: PC8 (Channel 3)
@@ -195,13 +201,19 @@ void enable_tim3(void)
 	TIM_DeInit(TIM3);
 
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStruct;
-	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);
 	TIM_TimeBaseStruct.TIM_Prescaler = (uint16_t)(9 - 1);
 	TIM_TimeBaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
 
-	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStruct);
+#if AIRFRAME_SELECT == AIRFRAME_QUADROTOR || AIRFRAME_SELECT == AIRFRAME_OCTOROTOR
+	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);
+#elif AIRFRAME_SELECT == AIRFRAME_CONVENTIONAL_FIXED_WING || AIRFRAME_SELECT == AIRFRAME_DELTA_WING
+	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(200000 - 1);
+#else
+	#error Unknown airframe selection
+#endif
 
+	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStruct);
 
 	/*TIM2 TIM3 TIM4 TIM8 */
 	TIM_OCInitTypeDef TIM_OCInitStruct;
@@ -228,14 +240,20 @@ void enable_tim4(void)
 {
 	/* [PWM Output]
 	 * Timer4: 90Mhz
-	 * Period count: 25000
+	 * ------------------------
 	 * Prescaler: 9
 	 * Clock Division: 1
-	 * 25000 * 9 / (90Mhz) = 0.0025(s) = 2.5(ms) = 400hz
-	 * ----------------------
+	 * ------------------------
+	 * [Motor mode]
+	 * Period count: 25000
 	 * Frequency: 400hz
 	 * Period: 2.5ms
-	 * ----------------------
+	 * ------------------------
+	 * [Servo mode]
+	 * Period count: 200000
+	 * Frequency: 50hz
+	 * Period: 20ms
+	 * ------------------------
 	 * MOTOR5: PD12 (Channel 1)
 	 * MOTOR6: PD13 (Channel 2)
 	 * MOTOR7: PD14 (Channel 3)
@@ -251,8 +269,7 @@ void enable_tim4(void)
 	GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_TIM4);
 
 	GPIO_InitTypeDef GPIO_InitStruct;
-	GPIO_InitStruct.GPIO_Pin =  GPIO_Pin_12 | GPIO_Pin_13 |
-				    GPIO_Pin_14 | GPIO_Pin_15;
+	GPIO_InitStruct.GPIO_Pin =  GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
@@ -264,10 +281,17 @@ void enable_tim4(void)
 	TIM_DeInit(TIM4);
 
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStruct;
-	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);
 	TIM_TimeBaseStruct.TIM_Prescaler = (uint16_t)(9 - 1);
 	TIM_TimeBaseStruct.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStruct.TIM_CounterMode = TIM_CounterMode_Up;
+
+#if AIRFRAME_SELECT == AIRFRAME_QUADROTOR || AIRFRAME_SELECT == AIRFRAME_OCTOROTOR
+	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(25000 - 1);
+#elif AIRFRAME_SELECT == AIRFRAME_CONVENTIONAL_FIXED_WING || AIRFRAME_SELECT == AIRFRAME_DELTA_WING
+	TIM_TimeBaseStruct.TIM_Period = (uint32_t)(200000 - 1);
+#else
+	#error Unknown airframe selection
+#endif
 
 	TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStruct);
 
@@ -294,17 +318,17 @@ void enable_tim4(void)
 void enable_tim5(void)
 {
 	/* [PWM Input]
-	 * Timer5: APB1 (90Mhz)
-	 * Period count: 65535
+	 * Timer5: 90Mhz
+	 * --------------------
 	 * Prescaler: 5
 	 * Clock Division: 1
-	 * 65535 * 5 / (90Mhz) = 0.00364(s) = 3.64(ms) = 274.66hz	
-	 * ----------------------
+	 * --------------------
+	 * Period count: 65535
 	 * Frequency: 274.66hz
 	 * Period: 3.64ms
-	 * ----------------------
-	 * RC3: PA1  (Channel 2)
-	 * RC4: PA0  (Channel 1)
+	 * --------------------
+	 * RC3: PA1 (Channel 2)
+	 * RC4: PA0 (Channel 1)
 	 */
 
 	GPIO_InitTypeDef GPIO_InitStructure;
