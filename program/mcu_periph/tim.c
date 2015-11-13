@@ -76,14 +76,14 @@ void enable_tim1(void)
 void enable_tim2(void)
 {
 	/* [PWM Input]
-	 * Timer2: APB1 (45Mhz)
+	 * Timer2: APB1 (90Mhz)
 	 * Period count: 65535
 	 * Prescaler: 5
 	 * Clock Division: 1
-	 * 65535 * 5 / (45MHZ) = 0.000728(s) = 0.728(ms) = 1373.31hz
+	 * 65535 * 5 / (90Mhz) = 0.00364(s) = 3.64(ms) = 274.66hz
 	 * ----------------------
-	 * Frequency: 1373.31hz
-	 * Period: 0.728ms
+	 * Frequency: 274.66hz
+	 * Period: 3.64ms
 	 * ----------------------
 	 * RC1: PA3  (Channel 4)
 	 * RC2: PA2  (Channel 3)
@@ -294,14 +294,14 @@ void enable_tim4(void)
 void enable_tim5(void)
 {
 	/* [PWM Input]
-	 * Timer5: APB1 (45Mhz)
+	 * Timer5: APB1 (90Mhz)
 	 * Period count: 65535
 	 * Prescaler: 5
 	 * Clock Division: 1
-	 * 65535 * 5 / (45MHZ) = 0.000728(s) = 0.728(ms) = 1373.31hz
+	 * 65535 * 5 / (90Mhz) = 0.00364(s) = 3.64(ms) = 274.66hz	
 	 * ----------------------
-	 * Frequency: 1373.31hz
-	 * Period: 0.728ms
+	 * Frequency: 274.66hz
+	 * Period: 3.64ms
 	 * ----------------------
 	 * RC3: PA1  (Channel 2)
 	 * RC4: PA0  (Channel 1)
