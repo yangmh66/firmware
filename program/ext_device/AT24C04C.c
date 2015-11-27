@@ -108,27 +108,27 @@ static void handle_eeprom_write_request(void)
 	 * 3.Enable DMA to send word address and datas
 	 * 4.Generate stop condition
 	 * ----------------------------------------------------------------
-	 * For detailed description you should read the ST reference manual
+	 * For detailed description please read the reference manual
 	 */
 
 	long higher_priority_task_woken = pdFALSE;
 
 	/* I2C Event handler (Step by step) */
 	switch(eeprom_device_info.state) {
-	    case GENERATE_START_CONDITION:
+	    case FINISHED_GENERATING_START_CONDITION:
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) {
 			//Step2: send I2C device address
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
 
-			eeprom_device_info.state = SEND_DEVICE_ADDRESS; //Move to next step
+			eeprom_device_info.state = FINISHED_SENDING_DEVICE_ADDRESS; //Move to next step
 		}
 		break;
 	    }
-	    case SEND_DEVICE_ADDRESS: //I2C device address
+	    case FINISHED_SENDING_DEVICE_ADDRESS: //I2C device address
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
-			eeprom_device_info.state = GENERATE_STOP_CONDITION; //Move to next step
+			eeprom_device_info.state = FINISHED_GENERATING_STOP_CONDITION; //Move to next step
 
 			//DMA ISR will re-enable this after the job is finished
 			I2C_ITConfig(I2C1, I2C_IT_EVT, DISABLE);
@@ -145,7 +145,7 @@ static void handle_eeprom_write_request(void)
 		}
     		break;
 	    }
-	    case GENERATE_STOP_CONDITION:
+	    case FINISHED_GENERATING_STOP_CONDITION:
 	    {
 		if(I2C_GetFlagStatus(I2C1, I2C_FLAG_BTF)) {
 			//Step4: generate stop condition
@@ -173,28 +173,28 @@ static void handle_eeprom_read_request(void)
 	 * 3.Send EEPROM address
 	 * 4.Generate start condition again
 	 * 5.Send I2C device address again
-	 * 6.For 1 byte case, wait for the RXNE flag and receive the data
+	 * 6.For 1 byte case, wait for RXNE flag then receive the data
 	 *   For n byte case, enable DMA to receive all datas
 	 * 7.Generate stop condition
 	 * ----------------------------------------------------------------
-	 * For detailed description you should read the ST reference manual
+	 * For detailed description please read the reference manual
 	 */
 
 	long higher_priority_task_woken = pdFALSE;
 
 	/* I2C Event handler (Step by step) */
 	switch(eeprom_device_info.state) {
-	    case GENERATE_START_CONDITION:
+	    case FINISHED_GENERATING_START_CONDITION:
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) {
 			/* Step2 : send I2C device address  */
 			I2C_Send7bitAddress(I2C1, eeprom_device_info.device_address, I2C_Direction_Transmitter);
 
-			eeprom_device_info.state = SEND_DEVICE_ADDRESS; //Move to next step
+			eeprom_device_info.state = FINISHED_SENDING_DEVICE_ADDRESS; //Move to next step
 		}
 		break;
 	    }
-	    case SEND_DEVICE_ADDRESS: //I2C device address
+	    case FINISHED_SENDING_DEVICE_ADDRESS: //I2C device address
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {
 			I2C_Cmd(I2C1, ENABLE);
@@ -202,21 +202,21 @@ static void handle_eeprom_read_request(void)
 			//Step3: send EEPROM word address
 			I2C_SendData(I2C1, eeprom_device_info.word_address);
 
-			eeprom_device_info.state = SEND_WORD_ADDRESS; //Move to next step
+			eeprom_device_info.state = FINISHED_SENDING_WORD_ADDRESS; //Move to next step
 		}
 		break;
 	    }
-	    case SEND_WORD_ADDRESS: //EEPROM address
+	    case FINISHED_SENDING_WORD_ADDRESS: //EEPROM address
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED)) {
 			//Step4: generate the start condition again
 			I2C_GenerateSTART(I2C1, ENABLE);
 
-			eeprom_device_info.state = GENERATE_START_CONDITION_AGAIN; //Move to next step
+			eeprom_device_info.state = FINISHED_GENERATING_START_CONDITION_AGAIN; //Move to next step
 		}
 		break;
 	    }
-	    case GENERATE_START_CONDITION_AGAIN:
+	    case FINISHED_GENERATING_START_CONDITION_AGAIN:
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT)) {
 			//Step5: Send I2C device address again
@@ -224,15 +224,15 @@ static void handle_eeprom_read_request(void)
 
 			if(eeprom_device_info.buffer_count == 1) {
 				//Step6: 1 byte reception (Polling)
-				eeprom_device_info.state = RECEIVE_ONE_BYTE_DATA;
+				eeprom_device_info.state = READY_TO_RECEIVE_ONE_BYTE_DATA;
 			} else {
 				//Step6: N byte reception (Using DMA)
-				eeprom_device_info.state = RECEIVE_N_BYTE_DATA;
+				eeprom_device_info.state = READY_TO_RECEIVE_N_BYTE_DATA;
 			}
 		}
 		break;
 	    }
-	    case RECEIVE_ONE_BYTE_DATA:
+	    case READY_TO_RECEIVE_ONE_BYTE_DATA:
 	    {
 		if(I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR)) {
 			//Setup NACK bit during EV6
@@ -268,7 +268,7 @@ static void handle_eeprom_read_request(void)
 		}
 		break;
 	    }
-	    case RECEIVE_N_BYTE_DATA:
+	    case READY_TO_RECEIVE_N_BYTE_DATA:
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) {
 			//DMA ISR will re-enable this after the job is finished
@@ -360,7 +360,7 @@ static int eeprom_page_write(uint8_t *data, uint8_t device_address, uint8_t word
 
 	/* Set EEPROM device information */
 	eeprom_device_info.operating_type = EEPROM_DEVICE_WRITE;
-	eeprom_device_info.state = GENERATE_START_CONDITION;
+	eeprom_device_info.state = FINISHED_GENERATING_START_CONDITION;
 	eeprom_device_info.device_address = device_address;
 	eeprom_device_info.word_address = word_address;
 	eeprom_device_info.buffer = send_buffer;
@@ -411,7 +411,7 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 
 	/* Set EEPROM device information */
 	eeprom_device_info.operating_type = EEPROM_DEVICE_READ;
-	eeprom_device_info.state = GENERATE_START_CONDITION;
+	eeprom_device_info.state = FINISHED_GENERATING_START_CONDITION;
 	eeprom_device_info.device_address = device_address;
 	eeprom_device_info.word_address = word_address;
 	eeprom_device_info.buffer = buffer;
