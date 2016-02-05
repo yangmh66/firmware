@@ -232,6 +232,7 @@ static void handle_eeprom_read_request(void)
 		}
 		break;
 	    }
+#if 0 //Fix by apply some hacking method
 	    case READY_TO_RECEIVE_ONE_BYTE_DATA:
 	    {
 		if(I2C_GetFlagStatus(I2C1, I2C_FLAG_ADDR)) {
@@ -268,6 +269,7 @@ static void handle_eeprom_read_request(void)
 		}
 		break;
 	    }
+#endif
 	    case READY_TO_RECEIVE_N_BYTE_DATA:
 	    {
 		if(I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)) {
@@ -418,7 +420,7 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	eeprom_device_info.buffer_count = buffer_count;
 	eeprom_device_info.received_count = 0;
 
-	/* ====================== I2C 1-byte reception hack ============================================== */
+	/* ===================XXX I2C 1-byte reception hack XXX=========================================== */
 	bool hack, meet_boundary;
 	uint8_t hack_buffer[2] = {'\0'};
 	uint8_t eeprom_last_word_address = 0, hack_eeprom_word_address;
@@ -464,7 +466,7 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
 
 
-	/* Get the one byte I2C reception hack's result */
+	/* XXX Get the one byte I2C reception hack's result XXX */
 	if(hack == true) {
 		if(meet_boundary == true) {
 			*buffer = hack_buffer[1];
