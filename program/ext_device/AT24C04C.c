@@ -418,6 +418,35 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	eeprom_device_info.buffer_count = buffer_count;
 	eeprom_device_info.received_count = 0;
 
+	/* ====================== I2C 1-byte reception hack ============================================== */
+	bool hack, meet_boundary;
+	uint8_t hack_buffer[2] = {'\0'};
+	uint8_t eeprom_last_word_address = 0, hack_eeprom_word_address;
+
+	/* Generate the last byte word address and the new last hacked address */	
+	int last_byte_address = EEPROM_MAX_SIZE - 1;
+	//EEPROM's last page
+	eeprom_last_word_address |= last_byte_address << 4;
+	//New hacked address is equal to old address shifted by one
+	hack_eeprom_word_address = (eeprom_last_word_address | (last_byte_address / EEPROM_PAGE_SIZE - 1));
+	//This is the old last byte word address
+	eeprom_last_word_address |= last_byte_address / EEPROM_PAGE_SIZE;
+
+	if(buffer_count == 1) {
+		hack = true;
+
+		/* Receive two bytes and drop the unnecessary one */
+		eeprom_device_info.buffer = hack_buffer;
+		eeprom_device_info.buffer_count = 2;
+
+		/* Check if the eeprom address meet the max boundary or not */
+		if(word_address == eeprom_last_word_address) {
+			meet_boundary = true;
+			eeprom_device_info.word_address = hack_eeprom_word_address;
+		}
+	}
+	/* =============================================================================================== */
+
 	//Step1: generate the start condition
 	I2C_GenerateSTART(I2C1, ENABLE); //Trigger the I2C communication
 
@@ -433,6 +462,16 @@ static int eeprom_sequential_read(uint8_t *buffer, uint8_t device_address, uint8
 	}
 
 	I2C_AcknowledgeConfig(I2C1, ENABLE);
+
+
+	/* Get the one byte I2C reception hack's result */
+	if(hack == true) {
+		if(meet_boundary == true) {
+			*buffer = hack_buffer[1];
+		} else {
+			*buffer = hack_buffer[0];
+		}
+	}
 
 	return eeprom_device_info.exit_status;
 }
